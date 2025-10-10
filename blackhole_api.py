@@ -1,4 +1,3 @@
-import numpy as np
 import math
 G=6.674e-11
 c=3.0e8
