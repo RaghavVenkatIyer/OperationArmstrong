@@ -2,6 +2,17 @@ import numpy as np
 import math
 G=6.674e-11
 c=3.0e8
+@app.route('/')
+def home():
+    return jsonify({
+        "message": "Welcome to the Black Hole Time Dilation API! 🌌",
+        "usage": "Send a POST request to /calculate with mass, distance, mode, and time values."
+    })
+
+# ⚙️ Calculation route
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    data = request.json
 M=float(input('Enter the mass of black hole : '))
 r=float(input('Enter the distance of the person from the black hole : '))
 r_s=(2*G*M)/c**2
@@ -17,3 +28,5 @@ else:
     print(t_viewer)
 
 
+if __name__ == '__main__':
+    app.run(debug=True)
