@@ -1,3 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      <title>Black Hole Simulation</title>
+      <link rel="stylesheet" href="https://pyscript.net/releases/2025.8.1/core.css">
+      <script type="module" src="https://pyscript.net/releases/2025.8.1/core.js"></script>
+   <pyscript>
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -26,3 +35,9 @@ plt.ylabel("Viewer's time (s)")
 plt.title("Time Dilation Near a Black Hole")
 plt.legend()
 plt.show()
+</pyscript>
+  </head>
+ </html>
+
+
+
