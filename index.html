@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Black Hole Time Dilation Calculator</title>
+<style>
+body { font-family: sans-serif; background:#111; color:#fff; padding:20px; }
+input, button { width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:none; }
+button { background:#0a0; color:#fff; cursor:pointer; }
+pre { background:#000; color:#0f0; padding:10px; border-radius:8px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h2>Black Hole Time Dilation Calculator</h2>
+
+<label>Mass of Black Hole (kg):</label>
+<input id="mass" type="number" step="any" placeholder="e.g. 5.97e24">
+
+<label>Distance from Black Hole (km):</label>
+<input id="distance" type="number" step="any" placeholder="e.g. 6000">
+
+<label>Mode (0 = Faller’s time, 1 = Viewer’s time):</label>
+<input id="mode" type="number" min="0" max="1" placeholder="0 or 1">
+
+<label>Viewer’s Time (s, if mode=0):</label>
+<input id="vtime" type="number" step="any" placeholder="e.g. 1000">
+
+<label>Faller’s Time (s, if mode=1):</label>
+<input id="ftime" type="number" step="any" placeholder="e.g. 1200">
+
+<button onclick="
+  const M=document.getElementById('mass').value;
+  const r=document.getElementById('distance').value;
+  const time=document.getElementById('mode').value;
+  const viewerstime=document.getElementById('vtime').value;
+  const fallerstime=document.getElementById('ftime').value;
+  const url='https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole?M='+encodeURIComponent(M)+'&r='+encodeURIComponent(r)+'&time='+encodeURIComponent(time)+'&viewerstime='+encodeURIComponent(viewerstime)+'&fallerstime='+encodeURIComponent(fallerstime);
+  fetch(url).then(res=>res.text()).then(text=>document.getElementById('output').innerText=text).catch(err=>document.getElementById('output').innerText='Error: '+err.message);
+">Calculate</button>
+
+<pre id="output"></pre>
+
+</body>
+</html>
