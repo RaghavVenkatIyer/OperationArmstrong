@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+this correct? : - <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 body { font-family: sans-serif; background:#111; color:#fff; padding:20px; }
 input, button { width:100%; padding:10px; margin-bottom:10px; border-radius:5px; border:none; }
 button { background:#0a0; color:#fff; cursor:pointer; }
-#output { background:#000; color:#0f0; padding:10px; border-radius:8px; white-space: pre-wrap; }
+pre { background:#000; color:#0f0; padding:10px; border-radius:8px; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -31,7 +31,8 @@ button { background:#0a0; color:#fff; cursor:pointer; }
 
 <button onclick="calculate()">Calculate</button>
 
-<div id="output">Output will appear here...</div>
+<div id="output" style="background:#000; color:#0f0; padding:10px; border-radius:8px;"></div>
+
 
 <script>
 async function calculate() {
@@ -58,13 +59,12 @@ async function calculate() {
     });
 
     const result = await response.json();
-
-    document.getElementById('output').innerHTML = `
-      <strong>Schwarzschild radius:</strong> ${result.schwarzchild_radius} m<br>
-      ${result.faller_time
-        ? `<strong>Faller’s time:</strong> ${result.faller_time} s`
-        : `<strong>Viewer’s time:</strong> ${result.viewer_time} s`}
-    `;
+document.getElementById('output').innerHTML = `
+  <strong>Schwarzschild radius:</strong> ${result.schwarzchild_radius} m<br>
+  ${result.faller_time
+    ? `<strong>Faller’s time:</strong> ${result.faller_time} s`
+    : `<strong>Viewer’s time:</strong> ${result.viewer_time} s`}
+`;
 
   } catch (err) {
     document.getElementById('output').innerText = '❌ Error: ' + err.message;
