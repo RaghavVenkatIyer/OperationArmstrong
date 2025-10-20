@@ -35,7 +35,6 @@ button { background:#0a0; color:#fff; cursor:pointer; }
 
 <script>
 const apis = [
-  { type: 'json', url: 'https://hornbill9916.pythonanywhere.com/calculate' },
   { type: 'json', url: 'https://operationarmstrong-6.onrender.com/calculate' },
   { type: 'query', url: 'https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole' }
 ];
@@ -53,7 +52,9 @@ async function calculate() {
   for (let api of apis) {
     try {
       let response;
+
       if (api.type === 'json') {
+        // Render API expects JSON POST
         response = await fetch(api.url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -61,26 +62,30 @@ async function calculate() {
         });
         if (!response.ok) throw new Error('Server returned ' + response.status);
         const result = await response.json();
+
         document.getElementById('output').innerHTML = `
           <strong>Schwarzschild radius:</strong> ${result.schwarzchild_radius} m<br>
           ${result.faller_time
             ? `<strong>Faller’s time:</strong> ${result.faller_time} s`
             : `<strong>Viewer’s time:</strong> ${result.viewer_time} s`}
-          <br><em>Served by: ${api.url}</em>
+          <br><em>Served by: Render API</em>
         `;
         return;
+
       } else if (api.type === 'query') {
         // Replit API expects query parameters
         const url = `${api.url}?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(vtime)}&fallerstime=${encodeURIComponent(ftime)}`;
         response = await fetch(url);
         if (!response.ok) throw new Error('Server returned ' + response.status);
         const text = await response.text();
+
         document.getElementById('output').innerHTML = `
           <pre>${text}</pre>
-          <br><em>Served by: ${api.url}</em>
+          <br><em>Served by: Replit API</em>
         `;
         return;
       }
+
     } catch (err) {
       console.warn(`API failed: ${api.url}`, err);
     }
