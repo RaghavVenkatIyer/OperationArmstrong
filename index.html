@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Black Hole Physics & Simulation</title>
 <style>
+/* (same styles as you provided) */
 body {
   font-family: 'Poppins', sans-serif;
   background: radial-gradient(circle at center, #000010, #000000);
@@ -12,117 +13,41 @@ body {
   text-align: center;
   padding: 20px;
 }
-
-h1 {
-  color: #0ff;
-  margin-bottom: 20px;
-  text-shadow: 0 0 10px #0ff;
-}
-
-.card {
-  background: rgba(20, 20, 20, 0.8);
-  border: 1px solid #0ff;
-  border-radius: 10px;
-  box-shadow: 0 0 15px #0ff4;
-  padding: 15px;
-  max-width: 500px;
-  margin: 15px auto;
-  text-align: left;
-}
-
-label {
-  display: block;
-  margin-top: 10px;
-  font-weight: bold;
-}
-
-input {
-  width: 95%;
-  background: #111;
-  color: #0ff;
-  border: 1px solid #0ff;
-  padding: 8px;
-  margin-top: 5px;
-  border-radius: 6px;
-  font-size: 1em;
-}
-
-button {
-  background: #111;
-  color: #0ff;
-  border: 1px solid #0ff;
-  padding: 10px 20px;
-  margin-top: 15px;
-  border-radius: 8px;
-  font-size: 1.1em;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-button:hover {
-  background-color: #0ff;
-  color: #000;
-}
-
-#output {
-  white-space: pre-wrap;
-  background: #111;
-  color: #0f0;
-  padding: 15px;
-  border-radius: 10px;
-  border: 1px solid #0ff;
-  margin-top: 20px;
-  max-width: 90%;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: left;
-}
-
-canvas {
-  display: block;
-  margin: 30px auto;
-  background: radial-gradient(circle at center, #000, #010010);
-  border-radius: 50%;
-  box-shadow: 0 0 40px #0ff4, inset 0 0 60px #000;
-}
+h1 { color: #0ff; margin-bottom: 20px; text-shadow: 0 0 10px #0ff; }
+.card { background: rgba(20,20,20,0.8); border: 1px solid #0ff; border-radius: 10px; box-shadow: 0 0 15px #0ff4; padding: 15px; max-width: 500px; margin: 15px auto; text-align: left; }
+label { display:block; margin-top:10px; font-weight:bold; }
+input { width:95%; background:#111; color:#0ff; border:1px solid #0ff; padding:8px; margin-top:5px; border-radius:6px; font-size:1em; }
+button { background:#111; color:#0ff; border:1px solid #0ff; padding:10px 20px; margin-top:15px; border-radius:8px; font-size:1.1em; cursor:pointer; transition:0.3s; }
+button:hover { background-color:#0ff; color:#000; }
+#output { white-space:pre-wrap; background:#111; color:#0f0; padding:15px; border-radius:10px; border:1px solid #0ff; margin-top:20px; max-width:90%; margin-left:auto; margin-right:auto; text-align:left;}
+canvas { display:block; margin:30px auto; background: radial-gradient(circle at center, #000, #010010); border-radius:50%; box-shadow:0 0 40px #0ff4, inset 0 0 60px #000; }
 </style>
 </head>
 <body>
-
 <h1>🌀 Black Hole Simulation & Physics Engine</h1>
 
 <div class="card">
   <h3>🔢 Basic Parameters</h3>
   <label>Mass of black hole (kg):</label>
   <input id="mass" type="number" step="any" placeholder="e.g. 5e30">
-
   <label>Distance from black hole (m):</label>
-  <input id="distance" type="number" step="any" placeholder="e.g. 10000">
-
+  <input id="distance" type="number" step="any" placeholder="e.g. 1e8">
   <label>Mode:</label>
-  <input id="mode" type="number" placeholder="0 = Faller's time, 1 = Viewer's time">
-
-  <label>Viewer's Time (s, if mode = 0):</label>
-  <input id="vtime" type="number" step="any" placeholder="e.g. 1200">
-
-  <label>Faller's Time (s, if mode = 1):</label>
-  <input id="ftime" type="number" step="any" placeholder="e.g. 1200">
+  <input id="mode" type="number" placeholder="0 = viewer→faller (viewer time given), 1 = faller→viewer">
+  <label>Time value (s) (viewer or faller depending on mode):</label>
+  <input id="timevalue" type="number" step="any" placeholder="e.g. 1200">
 </div>
 
 <div class="card">
   <h3>📏 Relativistic Length & Potential Parameters</h3>
   <label>Length Selection:</label>
   <input id="lengthselection" type="number" placeholder="0 = Viewer's length, 1 = Faller's length">
-
-  <label>Viewer's Length (m, if providing faller's length leave blank):</label>
+  <label>Viewer's Length (m):</label>
   <input id="viewerslength" type="number" step="any" placeholder="e.g. 2">
-
-  <label>Faller's Length (m, if providing viewer's length leave blank):</label>
+  <label>Faller's Length (m):</label>
   <input id="fallerslength" type="number" step="any" placeholder="e.g. 1.8">
-
   <label>Mass of object near black hole (kg):</label>
   <input id="objectmass" type="number" step="any" placeholder="e.g. 70">
-
   <label>Person's height (m):</label>
   <input id="height" type="number" step="any" placeholder="e.g. 1.8">
 </div>
@@ -134,7 +59,7 @@ canvas {
 <pre id="output"></pre>
 
 <script>
-// ---- BLACK HOLE VISUALIZATION ----
+// visualization (unchanged)
 const canvas = document.getElementById("blackholeCanvas");
 const ctx = canvas.getContext("2d");
 const stars = [];
@@ -171,26 +96,36 @@ function drawBlackHole() {
 }
 drawBlackHole();
 
-// ---- CALCULATION ----
 async function calculate() {
+  const baseURL = "https://d258dadd-c73d-442d-bbcc-1570d3c8e404-00-2dx0zyosk1khh.kirk.replit.dev/blackhole";
   const M = document.getElementById('mass').value;
   const r = document.getElementById('distance').value;
   const mode = document.getElementById('mode').value;
-  const viewerstime = document.getElementById('vtime').value || '';
-  const fallerstime = document.getElementById('ftime').value || '';
+  const timevalue = document.getElementById('timevalue').value || '';
   const lengthselection = document.getElementById('lengthselection').value || '';
   const viewerslength = document.getElementById('viewerslength').value || '';
   const fallerslength = document.getElementById('fallerslength').value || '';
   const m = document.getElementById('objectmass').value || '';
   const h = document.getElementById('height').value || '';
 
-  if (!M || !r || mode === '') {
-    document.getElementById('output').innerText = "⚠️ Please fill in mass, distance, and mode!";
+  if (!M || !r) {
+    document.getElementById('output').innerText = "⚠️ Please fill in mass and distance!";
     return;
   }
 
-  const url = `https://d258dadd-c73d-442d-bbcc-1570d3c8e404-00-2dx0zyosk1khh.kirk.replit.dev/blackhole?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(viewerstime)}&fallerstime=${encodeURIComponent(fallerstime)}&lengthselection=${encodeURIComponent(lengthselection)}&viewerslength=${encodeURIComponent(viewerslength)}&fallerslength=${encodeURIComponent(fallerslength)}&m=${encodeURIComponent(m)}&h=${encodeURIComponent(h)}`;
+  const params = new URLSearchParams({
+    M: M,
+    r: r,
+    time: mode,
+    time_value: timevalue,
+    lengthselection: lengthselection,
+    viewerslength: viewerslength,
+    fallerslength: fallerslength,
+    m: m,
+    h: h
+  });
 
+  const url = `${baseURL}?${params.toString()}`;
   document.getElementById('output').innerText = "⏳ Calculating...";
 
   try {
@@ -202,6 +137,5 @@ async function calculate() {
   }
 }
 </script>
-
 </body>
 </html>
