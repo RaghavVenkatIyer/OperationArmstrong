@@ -1,141 +1,227 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify, render_template_string
 import math
-import sys
-from io import StringIO
 
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    return "🌌 Black Hole Physics API is live and running — use /blackhole endpoint!"
-
-@app.route('/blackhole')
+# === Black Hole Physics Function ===
+@app.route("/blackhole")
 def blackhole():
-    # Redirect print output to a string
-    old_stdout = sys.stdout
-    sys.stdout = mystdout = StringIO()
+    try:
+        G = 6.67430e-11
+        c = 3e8
 
-    # Safe input replacement system
-    input_values = []
-    def fake_input(prompt=''):
-        if not input_values:
-            raise ValueError("Error: pop from empty list — missing input.")
-        return input_values.pop(0)
-    global input
-    input = fake_input
+        M = float(request.args.get("M", 0))
+        r = float(request.args.get("r", 0))
+        mode = int(request.args.get("time", 0))
+        time_value = float(request.args.get("time_value", 0))
+        lengthselection = request.args.get("lengthselection", "")
+        viewerslength = request.args.get("viewerslength", "")
+        fallerslength = request.args.get("fallerslength", "")
+        m = request.args.get("m", "")
+        h = request.args.get("h", "")
 
-    # Collect query params
-    params = request.args
-    M = params.get('M')
-    r = params.get('r')
-    time_mode = params.get('time')
-    viewerstime = params.get('viewerstime')
-    fallerstime = params.get('fallerstime')
-    lengthselection = params.get('lengthselection')
-    viewerslength = params.get('viewerslength')
-    fallerslength = params.get('fallerslength')
-    m = params.get('m')
-    h = params.get('h')
+        if M <= 0 or r <= 0:
+            return "⚠️ Invalid parameters! Mass and distance must be positive."
 
-    # Prepare fake input list
-    input_values = [v for v in [M, r, time_mode] if v not in [None, ""]]
-    if time_mode == "0" and viewerstime:
-        input_values.append(viewerstime)
-    elif time_mode == "1" and fallerstime:
-        input_values.append(fallerstime)
-    if lengthselection:
-        input_values.append(lengthselection)
-        if lengthselection == "0" and viewerslength:
-            input_values.append(viewerslength)
-        elif lengthselection == "1" and fallerslength:
-            input_values.append(fallerslength)
-    if m:
-        input_values.append(m)
-    if h:
-        input_values.append(h)
+        rs = 2 * G * M / (c**2)
+        if r <= rs:
+            return "⚠️ Distance must be greater than Schwarzschild radius!"
 
-    # Constants
-    G = 6.674e-11
-    c = 3.0e8
+        time_dilation = 1 / math.sqrt(1 - rs / r)
 
-    # ==================== BEGIN CALCULATIONS ====================
-    M = float(input("Enter the mass of black hole (kilograms): "))
-    r = float(input("Enter the distance of the person from the black hole (meters): "))
-    r_s = (2 * G * M) / c**2
-    print(f"Schwarzschild radius (r_s): {r_s:.15f} m")
+        if mode == 0:
+            fallers_time = time_value / time_dilation
+            viewers_time = time_value
+        else:
+            viewers_time = time_value * time_dilation
+            fallers_time = time_value
 
-    if r <= r_s:
-        raise ValueError(f"❌ Distance r ({r}) must be greater than Schwarzschild radius ({r_s}).")
+        result = (
+            f"🌀 Schwarzschild radius: {rs:.6e} m\n"
+            f"⏳ Time dilation factor: {time_dilation:.6f}\n"
+            f"🧍 Viewer's time: {viewers_time:.6f} s\n"
+            f"🕳️ Faller's time: {fallers_time:.6f} s\n"
+        )
 
-    mode = int(input("Enter 0 for faller’s time (input viewer’s time), or 1 for viewer’s time (input faller’s time): "))
-    if mode == 0:
-        viewerstime = float(input("Enter the viewer's time (seconds): "))
-        t_faller = viewerstime * math.sqrt(1 - r_s / r)
-        print(f"Faller’s proper time: {t_faller:.15f} seconds")
-    else:
-        fallerstime = float(input("Enter the faller’s time (seconds): "))
-        t_viewer = fallerstime / math.sqrt(1 - r_s / r)
-        print(f"Viewer’s time dilation: {t_viewer:.15f} seconds")
+        return result
+    except Exception as e:
+        return f"❌ Error: {e}"
 
-    escapevelocity = math.sqrt((2 * G * M) / r)
-    gravitationalacceleration = (G * M) / (r**2)
-    orbitalvelocity = math.sqrt((G * M) / r)
-    gravitationalredshift = (1 / math.sqrt(1 - (r_s / r))) - 1
 
-    print(f"Escape velocity: {escapevelocity:.15f} m/s")
-    print(f"Gravitational acceleration: {gravitationalacceleration:.15f} m/s²")
-    print(f"Orbital velocity: {orbitalvelocity:.15f} m/s")
-    print(f"Gravitational redshift: {gravitationalredshift:.15f}")
+# === HTML + JS FRONTEND ===
+@app.route("/")
+def index():
+    html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Black Hole Physics & Simulation (3D)</title>
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle at center, #000010, #000000);
+  color: #00ffea;
+  text-align: center;
+  margin: 0;
+  overflow: hidden;
+}
+.card {
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid #0ff;
+  border-radius: 10px;
+  box-shadow: 0 0 15px #0ff4;
+  padding: 15px;
+  max-width: 500px;
+  margin: 15px auto;
+  text-align: left;
+  z-index: 2;
+  position: relative;
+}
+h1 {
+  color: #0ff;
+  text-shadow: 0 0 10px #0ff;
+}
+label { display:block; margin-top:10px; font-weight:bold; }
+input {
+  width: 95%;
+  background: #111;
+  color: #0ff;
+  border: 1px solid #0ff;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 6px;
+  font-size: 1em;
+}
+button {
+  background: #111;
+  color: #0ff;
+  border: 1px solid #0ff;
+  padding: 10px 20px;
+  margin-top: 15px;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover { background-color: #0ff; color: #000; }
+#output {
+  white-space: pre-wrap;
+  background: #111;
+  color: #0f0;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #0ff;
+  margin-top: 20px;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+#sceneContainer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+</style>
+</head>
+<body>
+<h1>🌀 Black Hole Simulation & Physics Engine</h1>
 
-    # Length contraction
-    print("\n📏 Length Contraction Engine")
-    lengthselection = int(input("Enter 0 if providing viewers length, enter 1 if providing fallers length: "))
-    if lengthselection == 0:
-        viewersleng = float(input("Enter the viewer’s length (m): "))
-        fallerslength = viewersleng * math.sqrt(1 - (r_s / r))
-        print(f"Faller’s length: {fallerslength:.15f} m")
-    else:
-        fallerslen = float(input("Enter the faller’s length (m): "))
-        viewerslength = fallerslen / math.sqrt(1 - (r_s / r))
-        print(f"Viewer’s length: {viewerslength:.15f} m")
+<div class="card">
+  <h3>🔢 Basic Parameters</h3>
+  <label>Mass of black hole (kg):</label>
+  <input id="mass" type="number" step="any" placeholder="e.g. 5e30">
+  <label>Distance from black hole (m):</label>
+  <input id="distance" type="number" step="any" placeholder="e.g. 1e8">
+  <label>Mode:</label>
+  <input id="mode" type="number" placeholder="0 = viewer→faller, 1 = faller→viewer">
+  <label>Time value (s):</label>
+  <input id="timevalue" type="number" step="any" placeholder="e.g. 1200">
+</div>
 
-    # Gravitational potential energy
-    print("\n⚡ Gravitational Potential Energy Engine")
-    m = float(input("Enter the mass of the object near the black hole (kg): "))
-    gravitationalpotentialenergy = -((G * m * M) / r)
-    print(f"Gravitational potential energy: {gravitationalpotentialenergy:.15f} J")
+<div class="card">
+  <h3>📏 Relativistic Length & Potential Parameters</h3>
+  <label>Length Selection:</label>
+  <input id="lengthselection" type="number" placeholder="0 = Viewer's length, 1 = Faller's length">
+  <label>Viewer's Length (m):</label>
+  <input id="viewerslength" type="number" step="any" placeholder="e.g. 2">
+  <label>Faller's Length (m):</label>
+  <input id="fallerslength" type="number" step="any" placeholder="e.g. 1.8">
+  <label>Mass of object near black hole (kg):</label>
+  <input id="objectmass" type="number" step="any" placeholder="e.g. 70">
+  <label>Person's height (m):</label>
+  <input id="height" type="number" step="any" placeholder="e.g. 1.8">
+</div>
 
-    # Acceleration required to hover
-    print("\n🚀 Hover Acceleration Calculator")
-    acceleration = G * M / r**2 * math.sqrt(1 - (r_s / r))
-    print(f"Required hover acceleration: {acceleration:.15f} m/s²")
+<button onclick="calculate()">🚀 Calculate & Simulate</button>
 
-    # Orbital period
-    print("\n🪐 Orbital Period Calculator")
-    orbitalperiod = 2 * math.pi * math.sqrt(r**3 / (G * M))
-    print(f"Orbital period: {orbitalperiod:.15f} s")
+<pre id="output"></pre>
+<div id="sceneContainer"></div>
 
-    # Tidal force
-    print("\n🌊 Tidal Force Calculator")
-    h = float(input("Enter the person’s height (m): "))
-    tidalforce = (2 * G * M * h) / (r**3)
-    print(f"Tidal force difference: {tidalforce:.15f} N/kg")
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.getElementById('sceneContainer').appendChild(renderer.domElement);
 
-    print("\n✅ All calculations complete — summary of results:")
-    print(f"r_s = {r_s:.15f}")
-    print(f"Escape velocity = {escapevelocity:.15f}")
-    print(f"Gravitational acceleration = {gravitationalacceleration:.15f}")
-    print(f"Orbital velocity = {orbitalvelocity:.15f}")
-    print(f"Redshift = {gravitationalredshift:.15f}")
-    print(f"GPE = {gravitationalpotentialenergy:.15f}")
-    print(f"Hover acceleration = {acceleration:.15f}")
-    print(f"Orbital period = {orbitalperiod:.15f}")
-    print(f"Tidal force = {tidalforce:.15f}")
+const blackHoleGeometry = new THREE.SphereGeometry(1, 64, 64);
+const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+scene.add(blackHole);
 
-    # ==================== END CALCULATIONS ====================
+const accretionGeometry = new THREE.RingGeometry(1.2, 2, 128);
+const accretionMaterial = new THREE.MeshBasicMaterial({ color: 0xff3300, side: THREE.DoubleSide });
+const accretionDisk = new THREE.Mesh(accretionGeometry, accretionMaterial);
+accretionDisk.rotation.x = Math.PI / 2;
+scene.add(accretionDisk);
 
-    sys.stdout = old_stdout
-    return f"<pre>{mystdout.getvalue()}</pre>"
+camera.position.z = 5;
+function animate() {
+  requestAnimationFrame(animate);
+  accretionDisk.rotation.z += 0.005;
+  renderer.render(scene, camera);
+}
+animate();
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=81)
+async function calculate() {
+  const M = document.getElementById('mass').value;
+  const r = document.getElementById('distance').value;
+  const mode = document.getElementById('mode').value;
+  const timevalue = document.getElementById('timevalue').value || '';
+  const lengthselection = document.getElementById('lengthselection').value || '';
+  const viewerslength = document.getElementById('viewerslength').value || '';
+  const fallerslength = document.getElementById('fallerslength').value || '';
+  const m = document.getElementById('objectmass').value || '';
+  const h = document.getElementById('height').value || '';
+
+  const url = `/blackhole?M=${M}&r=${r}&time=${mode}&time_value=${timevalue}&lengthselection=${lengthselection}&viewerslength=${viewerslength}&fallerslength=${fallerslength}&m=${m}&h=${h}`;
+  
+  document.getElementById('output').innerText = "⏳ Calculating...";
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    document.getElementById('output').innerText = text;
+
+    const rs = 2 * 6.67430e-11 * M / (3e8**2);
+    const scale = Math.min(5, Math.max(0.5, rs / r * 10));
+    blackHole.scale.set(scale, scale, scale);
+    accretionDisk.scale.set(scale*1.5, scale*1.5, scale*1.5);
+  } catch (err) {
+    document.getElementById('output').innerText = "❌ Error: " + err.message;
+  }
+}
+</script>
+</body>
+</html>
+"""
+    return render_template_string(html)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=3000)
