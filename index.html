@@ -100,27 +100,30 @@ canvas {
   <input id="distance" type="number" step="any" placeholder="e.g. 10000">
 
   <label>Mode:</label>
-  <input id="mode" type="number" placeholder="0 = Faller’s time, 1 = Viewer’s time">
+  <input id="mode" type="number" placeholder="0 = Faller's time, 1 = Viewer's time">
 
-  <label>Viewer’s Time (s, if mode = 0):</label>
+  <label>Viewer's Time (s, if mode = 0):</label>
   <input id="vtime" type="number" step="any" placeholder="e.g. 1200">
 
-  <label>Faller’s Time (s, if mode = 1):</label>
+  <label>Faller's Time (s, if mode = 1):</label>
   <input id="ftime" type="number" step="any" placeholder="e.g. 1200">
 </div>
 
 <div class="card">
   <h3>📏 Relativistic Length & Potential Parameters</h3>
-  <label>Viewer’s Length (m, if providing faller’s length leave blank):</label>
+  <label>Length Selection:</label>
+  <input id="lengthselection" type="number" placeholder="0 = Viewer's length, 1 = Faller's length">
+
+  <label>Viewer's Length (m, if providing faller's length leave blank):</label>
   <input id="viewerslength" type="number" step="any" placeholder="e.g. 2">
 
-  <label>Faller’s Length (m, if providing viewer’s length leave blank):</label>
+  <label>Faller's Length (m, if providing viewer's length leave blank):</label>
   <input id="fallerslength" type="number" step="any" placeholder="e.g. 1.8">
 
   <label>Mass of object near black hole (kg):</label>
   <input id="objectmass" type="number" step="any" placeholder="e.g. 70">
 
-  <label>Person’s height (m):</label>
+  <label>Person's height (m):</label>
   <input id="height" type="number" step="any" placeholder="e.g. 1.8">
 </div>
 
@@ -175,13 +178,18 @@ async function calculate() {
   const mode = document.getElementById('mode').value;
   const viewerstime = document.getElementById('vtime').value;
   const fallerstime = document.getElementById('ftime').value;
+  const lengthselection = document.getElementById('lengthselection').value;
+  const viewerslength = document.getElementById('viewerslength').value;
+  const fallerslength = document.getElementById('fallerslength').value;
+  const m = document.getElementById('objectmass').value;
+  const h = document.getElementById('height').value;
 
   if (!M || !r || !mode) {
     document.getElementById('output').innerText = "⚠️ Please fill in mass, distance, and mode!";
     return;
   }
 
-  const url = `https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(viewerstime)}&fallerstime=${encodeURIComponent(fallerstime)}`;
+  const url = `https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(viewerstime)}&fallerstime=${encodeURIComponent(fallerstime)}&lengthselection=${encodeURIComponent(lengthselection)}&viewerslength=${encodeURIComponent(viewerslength)}&fallerslength=${encodeURIComponent(fallerslength)}&m=${encodeURIComponent(m)}&h=${encodeURIComponent(h)}`;
 
   document.getElementById('output').innerText = "⏳ Calculating...";
 
