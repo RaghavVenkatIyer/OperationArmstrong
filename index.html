@@ -3,182 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Black Hole Time Dilation Visualizer</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152/examples/js/controls/OrbitControls.js"></script>
-
+  <title>Black Hole Simulation</title>
   <style>
     body {
-      margin: 0;
+      background: radial-gradient(ellipse at center, #000010 0%, #000000 100%);
+      color: #00ffff;
+      font-family: 'Orbitron', sans-serif;
+      text-align: center;
       overflow: hidden;
-      background: radial-gradient(circle at center, #000000 70%, #020111 100%);
-      font-family: 'Poppins', sans-serif;
-      color: white;
     }
-    #ui {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(0, 0, 0, 0.6);
+    h1 {
+      margin-top: 20px;
+      color: #00eaff;
+      text-shadow: 0 0 15px #00ffff;
+    }
+    form {
+      margin: 20px auto;
       padding: 20px;
+      background: rgba(0, 0, 0, 0.4);
       border-radius: 12px;
-      width: 260px;
-      box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 20px #00ffff33;
+      width: 60%;
     }
     label {
-      font-size: 0.9em;
+      display: block;
+      margin: 10px;
+      color: #b0ffff;
     }
     input {
-      width: 100%;
-      padding: 8px;
-      margin: 6px 0 12px;
-      border: none;
-      border-radius: 6px;
-      outline: none;
-      background: #111;
-      color: white;
+      background: #001;
+      border: 1px solid #00ffff66;
+      color: #00ffff;
+      border-radius: 8px;
+      padding: 5px;
+      width: 60%;
+      text-align: center;
     }
     button {
-      width: 100%;
-      padding: 10px;
-      background: linear-gradient(90deg, #c400ff, #ff006a);
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-weight: bold;
+      background: #001;
+      color: #00ffff;
+      border: 1px solid #00ffff66;
+      border-radius: 10px;
+      padding: 10px 20px;
+      margin: 10px;
       cursor: pointer;
-      transition: 0.3s;
+      transition: all 0.3s ease;
     }
     button:hover {
-      opacity: 0.85;
+      background: #00ffff;
+      color: #000;
+      box-shadow: 0 0 20px #00ffff;
     }
-    #result {
-      margin-top: 15px;
-      font-size: 0.9em;
-      line-height: 1.5em;
+    #output {
+      margin-top: 20px;
+      color: #00ffea;
+      font-family: monospace;
+      text-align: left;
+      max-width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
     }
   </style>
 </head>
-
 <body>
-  <div id="ui">
-    <h3>🌀 Black Hole Simulator</h3>
-    <label>Mass (kg):</label>
-    <input type="number" id="mass" value="5e30" />
+  <h1>🌌 Black Hole Physics Simulation</h1>
 
-    <label>Distance (m):</label>
-    <input type="number" id="distance" value="1e7" />
+  <form id="blackholeForm">
+    <label>Mass of black hole (kg): <input type="number" id="M" required></label>
+    <label>Distance from black hole (m): <input type="number" id="r" required></label>
+    <label>Enter 0 for faller’s time or 1 for viewer’s time: <input type="number" id="time" required></label>
+    <label>Viewer's time (if faller=0): <input type="number" id="viewerstime"></label>
+    <label>Faller's time (if viewer=1): <input type="number" id="fallerstime"></label>
+    <button type="submit">Update Visualization & Call API</button>
+    <button type="button" id="resetBtn">Reset View</button>
+  </form>
 
-    <label>Time (s):</label>
-    <input type="number" id="time" value="10" />
+  <div id="output">Results will appear here...</div>
 
-    <button id="simulate">Simulate</button>
-    <div id="result"></div>
-  </div>
+  <canvas id="scene"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
 
   <script>
-    const API_URL = "https://d258dadd-c73d-442d-bbcc-1570d3c8e404-00-2dx0zyosk1khh.kirk.replit.dev/blackhole";
+    // ========== 3D BLACK HOLE VISUALIZATION ==========
+    let scene, camera, renderer, blackHole, accretionDisk;
 
-    let scene, camera, renderer, controls;
-    let blackHole, accretionDisk, starfield;
-
-    initScene();
-    animate();
-
-    document.getElementById("simulate").addEventListener("click", async () => {
-      const mass = parseFloat(document.getElementById("mass").value);
-      const distance = parseFloat(document.getElementById("distance").value);
-      const time = parseFloat(document.getElementById("time").value);
-
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mass, distance, time })
-      });
-
-      const data = await res.json();
-      const resultDiv = document.getElementById("result");
-
-      if (data.error) {
-        resultDiv.innerHTML = `<span style="color:#ff4444;">${data.error}</span>`;
-        return;
-      }
-
-      const { faller_time, viewer_time, curvature } = data;
-      resultDiv.innerHTML = `
-        <b>Faller Time:</b> ${faller_time} s<br>
-        <b>Viewer Time:</b> ${viewer_time} s<br>
-        <b>Curvature:</b> ${curvature}
-      `;
-
-      updateBlackHoleVisualization(mass, distance);
-    });
-
-    // Initialize 3D scene
     function initScene() {
       scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-      camera.position.z = 50;
-
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("scene"), antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(renderer.domElement);
 
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
+      const light = new THREE.PointLight(0xffffff, 1);
+      light.position.set(10, 10, 10);
+      scene.add(light);
 
-      // Black Hole Core
-      const blackHoleGeo = new THREE.SphereGeometry(5, 64, 64);
-      const blackHoleMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-      blackHole = new THREE.Mesh(blackHoleGeo, blackHoleMat);
+      const blackHoleGeometry = new THREE.SphereGeometry(1, 64, 64);
+      const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+      blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
       scene.add(blackHole);
 
-      // Accretion Disk
-      const diskGeo = new THREE.RingGeometry(6, 10, 256);
-      const diskMat = new THREE.MeshBasicMaterial({
-        color: 0xff6600,
+      const diskGeometry = new THREE.RingGeometry(1.2, 3.5, 64);
+      const diskMaterial = new THREE.MeshBasicMaterial({
+        color: 0xff3300,
         side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.8
       });
-      accretionDisk = new THREE.Mesh(diskGeo, diskMat);
+      accretionDisk = new THREE.Mesh(diskGeometry, diskMaterial);
       accretionDisk.rotation.x = Math.PI / 2;
       scene.add(accretionDisk);
 
-      // Starfield
-      const starGeo = new THREE.BufferGeometry();
-      const starCount = 1500;
-      const posArray = new Float32Array(starCount * 3);
-      for (let i = 0; i < starCount * 3; i++) {
-        posArray[i] = (Math.random() - 0.5) * 2000;
-      }
-      starGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
-      const starMat = new THREE.PointsMaterial({ color: 0xffffff });
-      starfield = new THREE.Points(starGeo, starMat);
-      scene.add(starfield);
-
-      window.addEventListener("resize", () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
+      camera.position.z = 8;
+      animate();
     }
 
-    // Update black hole visuals dynamically
-    function updateBlackHoleVisualization(mass, distance) {
-      const scale = Math.log10(mass) / 3;
-      blackHole.scale.set(scale, scale, scale);
-      accretionDisk.scale.set(scale, scale, scale);
-
-      const redshift = Math.min(1, 1 / (distance / 1e7));
-      accretionDisk.material.color.setHSL(0.05 + redshift * 0.4, 1, 0.5 - redshift * 0.3);
-    }
-
-    // Animation Loop
     function animate() {
       requestAnimationFrame(animate);
       accretionDisk.rotation.z += 0.01;
-      controls.update();
       renderer.render(scene, camera);
     }
-  </script>
-</body>
-</html>
+
+    function resetView() {
+      camera.position.set(0, 0, 8);
+    }
+
+    // ========== API CALL ==========
+    document.getEl
