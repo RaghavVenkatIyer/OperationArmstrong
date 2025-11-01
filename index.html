@@ -1,297 +1,121 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Interactive 3D Black Hole</title>
-  <style>
-    :root{--bg:#0b0b0f;--panel:#0f1720;--accent:#ff7a18;--muted:#98a0b3}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#e6eef8;background:radial-gradient(900px 600px at 10% 10%,#07101a 0%, transparent 10%),var(--bg);} 
-    #app{height:100vh;display:grid;grid-template-columns:1fr 340px;gap:18px;padding:22px}
-    #viewport{border-radius:14px;box-shadow:0 8px 30px rgba(2,6,23,0.6);overflow:hidden;background:linear-gradient(180deg,#06060a 0%, #0b0d11 100%);} 
-    .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:18px;border-radius:12px;color:#dbe8ff}
-    .controls{width:100%;display:flex;flex-direction:column;gap:12px}
-    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
-    input[type=range]{width:100%}
-    input[type=number]{width:120px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
-    .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .muted{color:var(--muted);font-size:13px}
-    button{background:linear-gradient(90deg,var(--accent),#ffd08a);border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
-    .footer{font-size:12px;color:var(--muted);margin-top:8px}
-    .legend{display:flex;gap:8px;align-items:center}
-    .dot{width:12px;height:12px;border-radius:50%}
-    .dot.rim{background:linear-gradient(180deg,#ffd28a,#ff7a18)}
-    .dot.disk{background:linear-gradient(90deg,#ff4f6c,#ffa96b)}
-    @media (max-width:980px){#app{grid-template-columns:1fr} .panel{position:relative;z-index:2}}
-  </style>
+    <title>3D Black Hole Simulator</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial; background: #151826; color: #eee; }
+        #controls { margin: 20px; background: #222; padding: 20px; border-radius: 8px; }
+        label { font-weight: bold; }
+        #renderCanvas { width: 100vw; height: 60vh; display: block; }
+        .summary { margin-top: 12px; padding: 16px; background: #1e212d; border-radius: 6px; }
+    </style>
 </head>
 <body>
-  <div id="app">
-    <div id="viewport" class="panel"></div>
-
-    <div class="panel">
-      <h2 style="margin:0 0 6px 0">Interactive Black Hole</h2>
-      <div class="muted" style="margin-bottom:12px">Drag on the hole to pull & contract it. Change the event horizon radius (in arbitrary scene units) below and press Apply.</div>
-
-      <div class="controls">
-        <div>
-          <label>Event horizon radius</label>
-          <div class="row">
-            <input id="ehRange" type="range" min="0.5" max="6" step="0.01" value="2">
-            <input id="ehNumber" type="number" min="0.5" max="6" step="0.01" value="2">
-          </div>
-        </div>
-
-        <div>
-          <label>Drag sensitivity (how much pulling affects radius)</label>
-          <input id="sensitivity" type="range" min="0.1" max="2" step="0.01" value="0.8">
-        </div>
-
-        <div class="row">
-          <button id="applyBtn">Apply</button>
-          <button id="resetBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit">Reset</button>
-        </div>
-
-        <div style="margin-top:8px">
-          <div class="row"><div class="muted">Current radius</div><div id="currentValue" style="font-weight:700">2.00</div></div>
-          <div class="row"><div class="muted">Drag state</div><div id="dragState" class="muted">idle</div></div>
-        </div>
-
-        <div class="footer">
-          <div style="margin-bottom:6px" class="legend"><div class="dot rim"></div><div class="muted">Event horizon / horizon rim</div></div>
-          <div class="legend"><div class="dot disk"></div><div class="muted">Accretion disk</div></div>
-        </div>
-      </div>
-
+    <h1>3D Black Hole Simulator</h1>
+    <div id="controls">
+        <form id="bhForm">
+            <label>Black Hole Mass (kg):</label>
+            <input type="number" id="mass" step="any" required>
+            <br><label>Distance from Center (m):</label>
+            <input type="number" id="radius" step="any" required>
+            <br><label>Object Mass Nearby (kg):</label>
+            <input type="number" id="objmass" step="any" required>
+            <br><label>Object Height (m):</label>
+            <input type="number" id="height" step="any" required>
+            <br>
+            <button type="submit">Simulate</button>
+        </form>
+        <div id="summary" class="summary"></div>
     </div>
-  </div>
+    <div id="renderCanvas"></div>
 
-  <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
-    import { OrbitControls } from 'https://unpkg.com/three@0.158.0/examples/jsm/controls/OrbitControls.js';
+    <!-- Three.js CDN -->
+    <script src="https://unpkg.com/three@0.151.3/build/three.min.js"></script>
+    <script>
+        // Basic 3D scene
+        let scene, camera, renderer, bhMesh, eventHorizonMesh;
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth/(window.innerHeight*0.6), 0.1, 1e5);
+            camera.position.set(0, 70, 150);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setClearColor(0x111122);
+            renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
+            document.getElementById('renderCanvas').appendChild(renderer.domElement);
 
-    // --------- Basic scene setup ---------
-    const container = document.getElementById('viewport');
-    const scene = new THREE.Scene();
-    const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    container.appendChild(renderer.domElement);
+            // Black hole sphere
+            bhMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(20, 64, 64),
+                new THREE.MeshBasicMaterial({color: 0x222244})
+            );
+            scene.add(bhMesh);
 
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
-    camera.position.set(0,1.6,6);
+            // Event horizon visualization (transparent)
+            eventHorizonMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(22, 32, 32),
+                new THREE.MeshBasicMaterial({color: 0xff2222, transparent: true, opacity: 0.3})
+            );
+            scene.add(eventHorizonMesh);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = false; controls.maxPolarAngle = Math.PI/2 + 0.3; controls.minDistance = 2; controls.maxDistance = 30;
+            // Some ambient stars
+            for (let i=0; i<1000; i++) {
+                const geo = new THREE.SphereGeometry(0.5,8,8);
+                const star = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color: 0xffffff}));
+                star.position.set(
+                    (Math.random()-0.5)*1000,
+                    (Math.random()-0.5)*1000,
+                    (Math.random()-0.5)*1000
+                );
+                scene.add(star);
+            }
 
-    window.addEventListener('resize', onWindowResize);
-    function onWindowResize(){
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      camera.aspect = container.clientWidth/container.clientHeight;
-      camera.updateProjectionMatrix();
-    }
+            animate();
+        }
+        function animate() {
+            requestAnimationFrame(animate);
+            bhMesh.rotation.y += 0.002;
+            eventHorizonMesh.rotation.y += 0.002;
+            renderer.render(scene, camera);
+        }
+        window.onload = init3D;
 
-    scene.background = new THREE.Color(0x02020b);
-    const hemi = new THREE.HemisphereLight(0xffffff,0x111111,0.35); scene.add(hemi);
+        // Physics calculation/visual API call
+        document.getElementById('bhForm').onsubmit = async function(evt) {
+            evt.preventDefault();
+            const G = 6.674e-11, c = 3e8;
+            let M = parseFloat(mass.value), r = parseFloat(radius.value), mobj = parseFloat(objmass.value), h = parseFloat(height.value);
+            // Schwarzschild radius
+            let r_s = (2*G*M)/(c**2);
 
-    // ---------- Black hole core (sphere with fresnel rim) ----------
-    const coreGeo = new THREE.SphereGeometry(1,64,64);
+            // Calculate escape velocity, etc. (client side, replace with API if needed)
+            let escapevelocity = Math.sqrt((2*G*M)/r);
+            let gravitationalacceleration = (G*M)/(r**2);
+            let orbitalvelocity = Math.sqrt((G*M)/r);
+            let gravitationalredshift = (1 / Math.sqrt(1 - (r_s / r))) - 1;
+            let gravitationalpotentialenergy = -((G*mobj*M)/r);
+            let acceleration = G*M/r**2*Math.sqrt(1-(r_s/r));
+            let orbitalperiod = 2*Math.PI*Math.sqrt(r**3/(G*M));
+            let tidalforce = (2*G*M*h)/(r**3);
 
-    const coreVertexShader = `
-      varying vec3 vNormal;
-      varying vec3 vPos;
-      void main(){
-        vNormal = normalize(normalMatrix * normal);
-        vPos = (modelViewMatrix * vec4(position,1.0)).xyz;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-      }
-    `;
-    const coreFragmentShader = `
-      precision mediump float;
-      uniform float uTime;
-      uniform vec3 uColor;
-      uniform vec3 uRimColor;
-      uniform float uRimPower;
-      varying vec3 vNormal;
-      varying vec3 vPos;
-      void main(){
-        float rim = 1.0 - max(0.0, dot(normalize(vPos), vNormal));
-        rim = pow(rim, uRimPower);
-        vec3 col = mix(uColor, uRimColor, rim);
-        float alpha = 1.0;
-        col += uRimColor * rim * 0.06 * (0.6 + 0.4 * sin(uTime * 2.0));
-        gl_FragColor = vec4(col, alpha);
-      }
-    `;
-    const coreMat = new THREE.ShaderMaterial({
-      transparent:true,
-      uniforms:{
-        uTime:{value:0},
-        uColor:{value:new THREE.Color(0x000000)},
-        uRimColor:{value:new THREE.Color(0xff8b42)},
-        uRimPower:{value:2.4}
-      },
-      vertexShader: coreVertexShader,
-      fragmentShader: coreFragmentShader
-    });
-    const core = new THREE.Mesh(coreGeo, coreMat);
-    scene.add(core);
+            // Update visualization
+            let scale = 22; // event horizon
+            bhMesh.scale.set(r_s/scale, r_s/scale, r_s/scale);
+            eventHorizonMesh.scale.set(r_s/scale, r_s/scale, r_s/scale);
 
-    // ---------- Accretion disk (textured torus) ----------
-    const diskGeo = new THREE.TorusGeometry(1.8,0.35,64,128);
-
-    const diskVertexShader = `
-      varying vec2 vUv;
-      varying vec3 vPos;
-      void main(){
-        vUv = uv;
-        vPos = position;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-      }
-    `;
-    const diskFragmentShader = `
-      precision mediump float;
-      uniform float uTime;
-      varying vec2 vUv;
-      varying vec3 vPos;
-      float rand(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453123);}
-      void main(){
-        float r = length(vUv - 0.5);
-        float stripe = smoothstep(0.09,0.11,abs(sin((vUv.x + uTime * 0.12) * 60.0))) * 0.9;
-        vec3 col = mix(vec3(1.0,0.6,0.2), vec3(1.0,0.2,0.4), r * 2.0);
-        col *= 0.35 + stripe * 1.2;
-        float alpha = smoothstep(0.55,0.4,r);
-        alpha *= 0.95;
-        gl_FragColor = vec4(col, alpha);
-      }
-    `;
-    const diskMat = new THREE.ShaderMaterial({
-      transparent:true,
-      side:THREE.DoubleSide,
-      uniforms:{uTime:{value:0}},
-      vertexShader: diskVertexShader,
-      fragmentShader: diskFragmentShader
-    });
-    const disk = new THREE.Mesh(diskGeo,diskMat);
-    disk.rotation.x = Math.PI/2 - 0.25;
-    disk.position.y = -0.06;
-    scene.add(disk);
-
-    // ---------- Gravitational lensing halo ----------
-    const haloGeo = new THREE.RingGeometry(2.2, 2.9, 64);
-    const haloVertexShader = `
-      varying vec2 vUv;
-      void main(){
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-      }
-    `;
-    const haloFragmentShader = `
-      precision mediump float;
-      varying vec2 vUv;
-      uniform float uTime;
-      void main(){
-        float g = 1.0 - length(vUv - 0.5);
-        g = pow(g, 1.8);
-        vec3 col = vec3(1.0,0.8,0.6) * g * 0.35 * (0.8 + 0.2 * sin(uTime * 1.6));
-        gl_FragColor = vec4(col, g * 0.6);
-      }
-    `;
-    const haloMat = new THREE.ShaderMaterial({
-      transparent:true,side:THREE.DoubleSide,depthWrite:false,
-      uniforms:{uTime:{value:0}},
-      vertexShader: haloVertexShader,
-      fragmentShader: haloFragmentShader
-    });
-    const halo = new THREE.Mesh(haloGeo, haloMat); halo.rotation.x = Math.PI/2; halo.position.y = -0.04; scene.add(halo);
-
-    // ---------- subtle background star field ----------
-    const stars = new THREE.BufferGeometry();
-    const starCount = 900;
-    const positions = new Float32Array(starCount*3);
-    for(let i=0;i<starCount;i++){positions[i*3+0]=(Math.random()*2-1)*60;positions[i*3+1]=(Math.random()*2-1)*40;positions[i*3+2]=(Math.random()*2-1)*60;}
-    stars.setAttribute('position', new THREE.BufferAttribute(positions,3));
-    const starMat = new THREE.PointsMaterial({size:0.06,transparent:true,opacity:0.9});
-    const starField = new THREE.Points(stars, starMat); scene.add(starField);
-
-    // ---------- parameters & UI linkage ----------
-    const ehRange = document.getElementById('ehRange');
-    const ehNumber = document.getElementById('ehNumber');
-    const applyBtn = document.getElementById('applyBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const sensitivity = document.getElementById('sensitivity');
-    const currentValue = document.getElementById('currentValue');
-    const dragState = document.getElementById('dragState');
-
-    let targetRadius = parseFloat(ehRange.value);
-    let actualRadius = targetRadius;
-    let pulling = false; let startY = 0; let startRadius = targetRadius;
-
-    ehRange.addEventListener('input', e=>{ehNumber.value = ehRange.value});
-    ehNumber.addEventListener('input', e=>{ehRange.value = ehNumber.value});
-
-    applyBtn.addEventListener('click', ()=>{targetRadius = parseFloat(ehNumber.value); if(targetRadius<0.5) targetRadius=0.5; if(targetRadius>6) targetRadius=6; currentValue.textContent = targetRadius.toFixed(2)});
-    resetBtn.addEventListener('click', ()=>{targetRadius = 2; ehRange.value = 2; ehNumber.value = 2; currentValue.textContent = '2.00'});
-
-    core.scale.setScalar(targetRadius);
-    disk.scale.setScalar(targetRadius*1.05);
-    halo.scale.setScalar(targetRadius*1.08);
-
-    renderer.domElement.style.touchAction = 'none';
-    renderer.domElement.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointerup', onUp);
-    function getPointer(ev){ const rect = renderer.domElement.getBoundingClientRect(); return {x:(ev.clientX-rect.left)/rect.width, y:(ev.clientY-rect.top)/rect.height}; }
-
-    function onDown(e){
-      const p = getPointer(e);
-      const dx = p.x - 0.5; const dy = p.y - 0.5;
-      if(Math.sqrt(dx*dx+dy*dy) < 0.45){ pulling = true; startY = e.clientY; startRadius = targetRadius; dragState.textContent = 'pulling'; }
-    }
-
-    function onUp(e){ if(!pulling) return; pulling=false;
-      targetRadius = Math.max(0.2, actualRadius); ehRange.value = targetRadius; ehNumber.value = targetRadius; currentValue.textContent = targetRadius.toFixed(2); dragState.textContent = 'idle'; }
-
-    renderer.domElement.addEventListener('pointermove', function(e){ if(!pulling) return; const dy = (e.clientY - startY);
-      const sens = parseFloat(sensitivity.value);
-      const change = (dy / window.innerHeight) * sens * 6.0;
-      actualRadius = Math.max(0.1, startRadius - change);
-      currentValue.textContent = actualRadius.toFixed(2);
-    });
-
-    // ---------- animation loop ----------
-    const clock = new THREE.Clock();
-    function animate(){
-      const t = clock.getElapsedTime();
-      requestAnimationFrame(animate);
-
-      if(!pulling){ actualRadius += (targetRadius - actualRadius)*0.08; }
-
-      core.scale.x = core.scale.y = core.scale.z = THREE.MathUtils.lerp(core.scale.x, actualRadius, 0.22);
-      disk.scale.setScalar(THREE.MathUtils.lerp(disk.scale.x, actualRadius*1.05, 0.16));
-      halo.scale.setScalar(THREE.MathUtils.lerp(halo.scale.x, actualRadius*1.08, 0.14));
-
-      disk.rotation.z += 0.006 + (0.002 * Math.sin(t*0.8));
-      starField.rotation.y += 0.0006;
-
-      coreMat.uniforms.uTime.value = t;
-      diskMat.uniforms.uTime.value = t;
-      haloMat.uniforms.uTime.value = t;
-
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    function fit(){ renderer.setSize(container.clientWidth, container.clientHeight); camera.aspect = container.clientWidth/container.clientHeight; camera.updateProjectionMatrix(); }
-    fit();
-
-    window.addEventListener('keydown', (e)=>{
-      if(e.key === 'r') resetBtn.click();
-      if(e.key === 'Enter') applyBtn.click();
-    });
-
-    (function adaptive(){ if(window.devicePixelRatio !== renderer.getPixelRatio()){renderer.setPixelRatio(Math.min(window.devicePixelRatio,2)); renderer.setSize(container.clientWidth, container.clientHeight);} requestAnimationFrame(adaptive); })();
-  </script>
+            document.getElementById('summary').innerHTML = `
+                <strong>Simulation Results:</strong><br>
+                Schwarzschild radius: <b>${r_s.toExponential(4)}m</b><br>
+                Escape velocity: <b>${escapevelocity.toExponential(4)}</b> m/s<br>
+                Gravitational acceleration near BH: <b>${gravitationalacceleration.toExponential(4)}</b> m/s²<br>
+                Orbital velocity: <b>${orbitalvelocity.toExponential(4)}</b> m/s<br>
+                Gravitational redshift: <b>${gravitationalredshift.toExponential(4)}</b><br>
+                Gravitational potential energy: <b>${gravitationalpotentialenergy.toExponential(4)}</b> J<br>
+                Acceleration required to hover: <b>${acceleration.toExponential(4)}</b> m/s²<br>
+                Orbital period: <b>${orbitalperiod.toExponential(4)}</b> s<br>
+                Tidal force: <b>${tidalforce.toExponential(4)}</b> N<br>
+            `;
+        }
+    </script>
 </body>
 </html>
