@@ -1,22 +1,9 @@
-# app.py
-import os
+from flask import Flask, request
 import math
 import sys
 from io import StringIO
-from flask import Flask, request, Response
-from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # allow cross-origin requests; install flask_cors if required
-
-G = 6.674e-11
-c = 3.0e8
-
-def safe_float(val, name=None):
-    try:
-        return float(val)
-    except (TypeError, ValueError):
-        raise ValueError(f"Parameter '{name}' must be a valid number.")
 
 @app.route('/')
 def home():
@@ -24,145 +11,131 @@ def home():
 
 @app.route('/blackhole')
 def blackhole():
-    # capture output into a string (keeps your front-end display logic)
+    # Redirect print output to a string
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
 
-    try:
-        # Read query params
-        M_raw = request.args.get('M', None)
-        r_raw = request.args.get('r', None)
-        mode = request.args.get('time', request.args.get('mode', '0'))  # accept either param name
-        t_raw = request.args.get('time_value', request.args.get('time', None))  # optional
-        # length and other optional params
-        lengthselection = request.args.get('lengthselection', None)
-        viewerslength_raw = request.args.get('viewerslength', None)
-        fallerslength_raw = request.args.get('fallerslength', None)
-        m_raw = request.args.get('m', request.args.get('objectmass', None))
-        h_raw = request.args.get('h', request.args.get('height', None))
+    # Safe input replacement system
+    input_values = []
+    def fake_input(prompt=''):
+        if not input_values:
+            raise ValueError("Error: pop from empty list — missing input.")
+        return input_values.pop(0)
+    global input
+    input = fake_input
 
-        # Required param checks
-        if M_raw is None or r_raw is None:
-            raise ValueError("Missing required parameters: 'M' (mass) and 'r' (distance).")
+    # Collect query params
+    params = request.args
+    M = params.get('M')
+    r = params.get('r')
+    time_mode = params.get('time')
+    viewerstime = params.get('viewerstime')
+    fallerstime = params.get('fallerstime')
+    lengthselection = params.get('lengthselection')
+    viewerslength = params.get('viewerslength')
+    fallerslength = params.get('fallerslength')
+    m = params.get('m')
+    h = params.get('h')
 
-        # Parse numeric params
-        M = safe_float(M_raw, 'M')
-        r = safe_float(r_raw, 'r')
-        t_value = None
-        if t_raw is not None:
-            t_value = safe_float(t_raw, 'time')
+    # Prepare fake input list
+    input_values = [v for v in [M, r, time_mode] if v not in [None, ""]]
+    if time_mode == "0" and viewerstime:
+        input_values.append(viewerstime)
+    elif time_mode == "1" and fallerstime:
+        input_values.append(fallerstime)
+    if lengthselection:
+        input_values.append(lengthselection)
+        if lengthselection == "0" and viewerslength:
+            input_values.append(viewerslength)
+        elif lengthselection == "1" and fallerslength:
+            input_values.append(fallerslength)
+    if m:
+        input_values.append(m)
+    if h:
+        input_values.append(h)
 
-        m_obj = safe_float(m_raw, 'm') if m_raw is not None else None
-        h = safe_float(h_raw, 'h') if h_raw is not None else None
+    # Constants
+    G = 6.674e-11
+    c = 3.0e8
 
-        # Validate physical values
-        if M <= 0 or r <= 0:
-            raise ValueError("Mass 'M' and distance 'r' must be positive numbers.")
+    # ==================== BEGIN CALCULATIONS ====================
+    M = float(input("Enter the mass of black hole (kilograms): "))
+    r = float(input("Enter the distance of the person from the black hole (meters): "))
+    r_s = (2 * G * M) / c**2
+    print(f"Schwarzschild radius (r_s): {r_s:.15f} m")
 
-        # Schwarzschild radius
-        r_s = (2 * G * M) / (c ** 2)
-        print(f"Schwarzschild radius = {r_s} m")
+    if r <= r_s:
+        raise ValueError(f"❌ Distance r ({r}) must be greater than Schwarzschild radius ({r_s}).")
 
-        if r <= r_s:
-            raise ValueError("Distance 'r' must be greater than the Schwarzschild radius (r_s).")
+    mode = int(input("Enter 0 for faller’s time (input viewer’s time), or 1 for viewer’s time (input faller’s time): "))
+    if mode == 0:
+        viewerstime = float(input("Enter the viewer's time (seconds): "))
+        t_faller = viewerstime * math.sqrt(1 - r_s / r)
+        print(f"Faller’s proper time: {t_faller:.15f} seconds")
+    else:
+        fallerstime = float(input("Enter the faller’s time (seconds): "))
+        t_viewer = fallerstime / math.sqrt(1 - r_s / r)
+        print(f"Viewer’s time dilation: {t_viewer:.15f} seconds")
 
-        # Time dilation: if mode parameter is provided use it; default to 0 behavior if t_value provided
-        # mode: '0' means viewer -> faller (viewer time provided), '1' means faller -> viewer (faller time provided)
-        if mode is None:
-            mode = '0'
+    escapevelocity = math.sqrt((2 * G * M) / r)
+    gravitationalacceleration = (G * M) / (r**2)
+    orbitalvelocity = math.sqrt((G * M) / r)
+    gravitationalredshift = (1 / math.sqrt(1 - (r_s / r))) - 1
 
-        if t_value is None:
-            # If user didn't provide a time, we will skip time-dilation conversion but still compute other properties
-            print("No time value provided; skipping time-dilation conversion.")
-        else:
-            if mode == '0' or mode == 'viewer' or mode == 'v':
-                # viewer time given, compute faller time
-                if (1 - r_s / r) < 0:
-                    raise ValueError("Invalid geometry: (1 - r_s / r) < 0. Distance is too close to horizon.")
-                t_faller = t_value * math.sqrt(1 - r_s / r)
-                print(f"Given viewer's time = {t_value} s → Faller's time = {t_faller} s")
-            else:
-                # faller time given, compute viewer time
-                if (1 - r_s / r) <= 0:
-                    raise ValueError("Invalid geometry: (1 - r_s / r) <= 0. Distance is too close to horizon.")
-                t_viewer = t_value / math.sqrt(1 - r_s / r)
-                print(f"Given faller's time = {t_value} s → Viewer's time = {t_viewer} s")
+    print(f"Escape velocity: {escapevelocity:.15f} m/s")
+    print(f"Gravitational acceleration: {gravitationalacceleration:.15f} m/s²")
+    print(f"Orbital velocity: {orbitalvelocity:.15f} m/s")
+    print(f"Gravitational redshift: {gravitationalredshift:.15f}")
 
-        # Escape velocity
-        v_escape = math.sqrt((2 * G * M) / r)
-        print(f"Escape velocity = {v_escape} m/s")
+    # Length contraction
+    print("\n📏 Length Contraction Engine")
+    lengthselection = int(input("Enter 0 if providing viewers length, enter 1 if providing fallers length: "))
+    if lengthselection == 0:
+        viewersleng = float(input("Enter the viewer’s length (m): "))
+        fallerslength = viewersleng * math.sqrt(1 - (r_s / r))
+        print(f"Faller’s length: {fallerslength:.15f} m")
+    else:
+        fallerslen = float(input("Enter the faller’s length (m): "))
+        viewerslength = fallerslen / math.sqrt(1 - (r_s / r))
+        print(f"Viewer’s length: {viewerslength:.15f} m")
 
-        # Gravitational acceleration
-        g_acc = (G * M) / (r ** 2)
-        print(f"Gravitational acceleration = {g_acc} m/s²")
+    # Gravitational potential energy
+    print("\n⚡ Gravitational Potential Energy Engine")
+    m = float(input("Enter the mass of the object near the black hole (kg): "))
+    gravitationalpotentialenergy = -((G * m * M) / r)
+    print(f"Gravitational potential energy: {gravitationalpotentialenergy:.15f} J")
 
-        # Orbital velocity
-        v_orb = math.sqrt((G * M) / r)
-        print(f"Orbital velocity = {v_orb} m/s")
+    # Acceleration required to hover
+    print("\n🚀 Hover Acceleration Calculator")
+    acceleration = G * M / r**2 * math.sqrt(1 - (r_s / r))
+    print(f"Required hover acceleration: {acceleration:.15f} m/s²")
 
-        # Gravitational redshift
-        redshift = (1 / math.sqrt(1 - (r_s / r))) - 1
-        print(f"Gravitational redshift = {redshift}")
+    # Orbital period
+    print("\n🪐 Orbital Period Calculator")
+    orbitalperiod = 2 * math.pi * math.sqrt(r**3 / (G * M))
+    print(f"Orbital period: {orbitalperiod:.15f} s")
 
-        # Compressed length (if provided)
-        if lengthselection is not None:
-            try:
-                ls = int(lengthselection)
-            except:
-                ls = None
-            if ls == 0 and viewerslength_raw is not None:
-                viewers_len = safe_float(viewerslength_raw, 'viewerslength')
-                faller_len = viewers_len * math.sqrt(1 - (r_s / r))
-                print(f"Viewer's length = {viewers_len} m → Faller's length = {faller_len} m")
-            elif ls == 1 and fallerslength_raw is not None:
-                faller_len = safe_float(fallerslength_raw, 'fallerslength')
-                viewers_len = faller_len / math.sqrt(1 - (r_s / r))
-                print(f"Faller's length = {faller_len} m → Viewer's length = {viewers_len} m")
-            else:
-                print("Length selection provided but required length value missing; skipping length conversion.")
+    # Tidal force
+    print("\n🌊 Tidal Force Calculator")
+    h = float(input("Enter the person’s height (m): "))
+    tidalforce = (2 * G * M * h) / (r**3)
+    print(f"Tidal force difference: {tidalforce:.15f} N/kg")
 
-        # Gravitational potential energy (if object mass provided)
-        if m_obj is not None:
-            U = -((G * m_obj * M) / r)
-            print(f"Gravitational potential energy (m={m_obj} kg) = {U} J")
-        else:
-            print("No object mass 'm' provided; skipping gravitational potential energy.")
+    print("\n✅ All calculations complete — summary of results:")
+    print(f"r_s = {r_s:.15f}")
+    print(f"Escape velocity = {escapevelocity:.15f}")
+    print(f"Gravitational acceleration = {gravitationalacceleration:.15f}")
+    print(f"Orbital velocity = {orbitalvelocity:.15f}")
+    print(f"Redshift = {gravitationalredshift:.15f}")
+    print(f"GPE = {gravitationalpotentialenergy:.15f}")
+    print(f"Hover acceleration = {acceleration:.15f}")
+    print(f"Orbital period = {orbitalperiod:.15f}")
+    print(f"Tidal force = {tidalforce:.15f}")
 
-        # Hover acceleration
-        hover_a = (G * M / r ** 2) * math.sqrt(1 - (r_s / r))
-        print(f"Hover acceleration = {hover_a} m/s²")
+    # ==================== END CALCULATIONS ====================
 
-        # Orbital period
-        T = 2 * math.pi * math.sqrt(r ** 3 / (G * M))
-        print(f"Orbital period = {T} s")
-
-        # Tidal force (if height provided)
-        if h is not None:
-            F_tidal = (2 * G * M * h) / (r ** 3)
-            print(f"Tidal force (for height {h} m) = {F_tidal} N")
-        else:
-            print("No height 'h' provided; skipping tidal force calculation.")
-
-        # Summary
-        print("\nSummary:")
-        print(f"Schwarzschild radius: {r_s} m")
-        print(f"Escape velocity: {v_escape} m/s")
-        print(f"Gravitational acceleration: {g_acc} m/s²")
-        print(f"Orbital velocity: {v_orb} m/s")
-        print(f"Gravitational redshift: {redshift}")
-
-        sys.stdout = old_stdout
-        text = mystdout.getvalue()
-        return Response(f"<pre>{text}</pre>", mimetype='text/html')
-
-    except ValueError as ve:
-        sys.stdout = old_stdout
-        return Response(f"<pre>Error: {ve}</pre>", mimetype='text/html'), 400
-
-    except Exception as e:
-        sys.stdout = old_stdout
-        return Response(f"<pre>Unexpected error: {e}</pre>", mimetype='text/html'), 500
+    sys.stdout = old_stdout
+    return f"<pre>{mystdout.getvalue()}</pre>"
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=81)
