@@ -1,3 +1,4 @@
+@@ -3,33 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +8,16 @@
 body {
   font-family: 'Roboto', sans-serif;
   font-family: 'Poppins', sans-serif;
-background: radial-gradient(circle at center, #000010, #000000);
-color: #00ffea;
-text-align: center;
-padding: 20px;
+  background: radial-gradient(circle at center, #000010, #000000);
+  color: #00ffea;
+  text-align: center;
+  padding: 20px;
   overflow-x: hidden;
 }
 
 h1 {
-color: #0ff;
-margin-bottom: 20px;
+  color: #0ff;
+  margin-bottom: 20px;
   text-shadow: 0 0 10px #0ff;
 }
 
@@ -40,14 +41,14 @@ label {
 
 input {
   width: 95%;
-background: #111;
-color: #0ff;
-border: 1px solid #0ff;
-padding: 8px;
+  background: #111;
+  color: #0ff;
+  border: 1px solid #0ff;
+  padding: 8px;
   margin: 5px;
   margin-top: 5px;
-border-radius: 6px;
-font-size: 1em;
+  border-radius: 6px;
+  font-size: 1em;
 }
 
 button {
@@ -58,27 +59,27 @@ button {
   margin-top: 15px;
   border-radius: 8px;
   font-size: 1.1em;
-cursor: pointer;
-transition: 0.3s;
+  cursor: pointer;
+  transition: 0.3s;
 }
 @@ -46,7 +71,7 @@
-padding: 15px;
-border-radius: 10px;
-border: 1px solid #0ff;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #0ff;
   margin-top: 15px;
   margin-top: 20px;
-max-width: 90%;
-margin-left: auto;
-margin-right: auto;
+  max-width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 @@ -55,7 +80,7 @@
 
 canvas {
-display: block;
+  display: block;
   margin: 20px auto;
   margin: 30px auto;
-background: radial-gradient(circle at center, #000, #010010);
-border-radius: 50%;
-box-shadow: 0 0 40px #0ff4, inset 0 0 60px #000;
+  background: radial-gradient(circle at center, #000, #010010);
+  border-radius: 50%;
+  box-shadow: 0 0 40px #0ff4, inset 0 0 60px #000;
 @@ -64,27 +89,43 @@
 </head>
 <body>
@@ -137,7 +138,7 @@ box-shadow: 0 0 40px #0ff4, inset 0 0 60px #000;
 <canvas id="blackholeCanvas" width="400" height="400"></canvas>
 
 <pre id="output"></pre>
-@@ -94,52 +135,40 @@ <h1>🌀 Black Hole Simulation</h1>
+@@ -94,52 +135,40 @@
 const canvas = document.getElementById("blackholeCanvas");
 const ctx = canvas.getContext("2d");
 const stars = [];
@@ -146,37 +147,37 @@ const numStars = 150;
 // Initialize stars around black hole
 for (let i = 0; i < numStars; i++) {
 for (let i = 0; i < 120; i++) {
-const angle = Math.random() * Math.PI * 2;
-const radius = 150 + Math.random() * 100;
-stars.push({ angle, radius, speed: 0.002 + Math.random() * 0.003 });
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 150 + Math.random() * 100;
+  stars.push({ angle, radius, speed: 0.002 + Math.random() * 0.003 });
 }
 
 function drawBlackHole() {
   const w = canvas.width;
   const h = canvas.height;
   const w = canvas.width, h = canvas.height;
-ctx.clearRect(0, 0, w, h);
+  ctx.clearRect(0, 0, w, h);
 
   // Gravitational redshift halo
-const gradient = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, 150);
-gradient.addColorStop(0, "black");
+  const gradient = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, 150);
+  gradient.addColorStop(0, "black");
   gradient.addColorStop(0.5, "#300000");
   gradient.addColorStop(0.5, "#400000");
-gradient.addColorStop(1, "rgba(255,0,0,0)");
-ctx.fillStyle = gradient;
-ctx.fillRect(0, 0, w, h);
+  gradient.addColorStop(1, "rgba(255,0,0,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, w, h);
 
   // Black hole core
-ctx.beginPath();
-ctx.arc(w/2, h/2, 30, 0, Math.PI * 2);
-ctx.fillStyle = "black";
+  ctx.beginPath();
+  ctx.arc(w/2, h/2, 30, 0, Math.PI * 2);
+  ctx.fillStyle = "black";
   ctx.shadowBlur = 20;
   ctx.shadowBlur = 25;
-ctx.shadowColor = "#0ff";
-ctx.fill();
+  ctx.shadowColor = "#0ff";
+  ctx.fill();
 
   // Orbiting stars
-ctx.shadowBlur = 0;
+  ctx.shadowBlur = 0;
   for (let star of stars) {
     star.angle += star.speed;
     const x = w/2 + star.radius * Math.cos(star.angle);
@@ -187,24 +188,41 @@ ctx.shadowBlur = 0;
     const x = w/2 + s.radius * Math.cos(s.angle);
     const y = h/2 + s.radius * Math.sin(s.angle);
     const brightness = Math.min(255, 150 + 105 * Math.sin(s.angle));
-ctx.fillStyle = `rgb(${brightness},${brightness},255)`;
-ctx.fillRect(x, y, 2, 2);
-}
+    ctx.fillStyle = `rgb(${brightness},${brightness},255)`;
+    ctx.fillRect(x, y, 2, 2);
+  }
 
-requestAnimationFrame(drawBlackHole);
+  requestAnimationFrame(drawBlackHole);
 }
 drawBlackHole();
 
 // ---- CALCULATE ----
 // ---- CALCULATION ----
 async function calculate() {
-const M = document.getElementById('mass').value;
-const r = document.getElementById('distance').value;
-@@ -148,7 +177,7 @@ <h1>🌀 Black Hole Simulation</h1>
-const fallerstime = document.getElementById('ftime').value;
+  const M = document.getElementById('mass').value;
+  const r = document.getElementById('distance').value;
+@@ -148,23 +177,23 @@
+  const fallerstime = document.getElementById('ftime').value;
 
-if (!M || !r || !mode) {
+  if (!M || !r || !mode) {
     document.getElementById('output').innerText = "⚠️ Please fill all required fields!";
     document.getElementById('output').innerText = "⚠️ Please fill in mass, distance, and mode!";
-return;
+    return;
+  }
+
+  const url = `https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(viewerstime)}&fallerstime=${encodeURIComponent(fallerstime)}`;
+
+  document.getElementById('output').innerText = "⏳ Calculating...";
+
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    document.getElementById('output').innerHTML = text;
+  } catch (err) {
+    document.getElementById('output').innerText = "❌ Error: " + err.message;
+  }
 }
+</script>
+
+</body>
+</html>
