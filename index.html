@@ -176,15 +176,15 @@ async function calculate() {
   const M = document.getElementById('mass').value;
   const r = document.getElementById('distance').value;
   const mode = document.getElementById('mode').value;
-  const viewerstime = document.getElementById('vtime').value;
-  const fallerstime = document.getElementById('ftime').value;
-  const lengthselection = document.getElementById('lengthselection').value;
-  const viewerslength = document.getElementById('viewerslength').value;
-  const fallerslength = document.getElementById('fallerslength').value;
-  const m = document.getElementById('objectmass').value;
-  const h = document.getElementById('height').value;
+  const viewerstime = document.getElementById('vtime').value || '';
+  const fallerstime = document.getElementById('ftime').value || '';
+  const lengthselection = document.getElementById('lengthselection').value || '';
+  const viewerslength = document.getElementById('viewerslength').value || '';
+  const fallerslength = document.getElementById('fallerslength').value || '';
+  const m = document.getElementById('objectmass').value || '';
+  const h = document.getElementById('height').value || '';
 
-  if (!M || !r || !mode) {
+  if (!M || !r || mode === '') {
     document.getElementById('output').innerText = "⚠️ Please fill in mass, distance, and mode!";
     return;
   }
