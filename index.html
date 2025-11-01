@@ -1,186 +1,453 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Black Hole Simulator</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Black Hole Time Dilation Simulator</title>
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background-color: black;
-      color: white;
-      font-family: "Poppins", sans-serif;
+    :root{
+      --bg1:#03030a;
+      --bg2:#000000;
+      --panel:#0f1724;
+      --muted:#9aa4b2;
+      --accent:#6b46c1;
+      --glass: rgba(255,255,255,0.04);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+    }
+    html,body{height:100%;margin:0;font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{
+      background: radial-gradient(circle at 30% 20%, rgba(10,10,20,1) 0%, rgba(2,2,6,1) 40%, #000000 100%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;align-items:center;justify-content:center;padding:32px;
     }
 
-    #ui {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    .container{
+      width:100%; max-width:1200px; display:grid; grid-template-columns: 1fr 540px; gap:28px;
     }
 
-    input, select, button {
-      width: 200px;
-      margin-top: 6px;
-      padding: 6px;
-      border: none;
-      border-radius: 6px;
-      background-color: #222;
-      color: white;
-      outline: none;
+    /* Left panel (controls) */
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px; padding:20px; box-shadow: 0 8px 30px rgba(2,6,23,0.7);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{margin:0 0 16px;color:var(--muted);font-size:13px}
+
+    .row{display:flex;gap:12px;align-items:center}
+    .col{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+
+    label{font-size:13px;color:var(--muted)}
+    input[type="number"], input[type="text"], select {
+      background: rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);
+      padding:10px 12px;border-radius:8px;color:inherit;font-size:14px;
+      outline:none;
+    }
+    input[type="radio"]{transform:scale(1.1)}
+
+    .controls-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;gap:8px;margin-top:8px}
+    button{
+      background:linear-gradient(180deg,var(--accent), #5031a6);
+      color:white;border:0;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;
+      box-shadow:0 6px 18px rgba(75,40,130,0.24);
+    }
+    button.ghost{
+      background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);box-shadow:none;
+    }
+    .small{font-size:13px;padding:8px 10px;border-radius:8px}
+
+    .results{
+      margin-top:14px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.02);
+      font-size:13px;color:#dbe9ff;
+    }
+    .mono{font-family:var(--mono);font-size:13px;background:rgba(255,255,255,0.02);padding:4px 6px;border-radius:6px;}
+
+    /* Right panel (canvas) */
+    .vis{
+      position:relative;border-radius:14px;overflow:hidden;
+      min-height:520px;
+      background: radial-gradient(circle at 50% 45%, rgba(10,10,30,0.6) 0%, rgba(0,0,0,1) 70%);
+      border:1px solid rgba(255,255,255,0.03);box-shadow: inset 0 2px 30px rgba(0,0,0,0.6);
+    }
+    canvas{display:block;width:100%;height:100%}
+
+    .overlay{
+      position:absolute;left:14px;right:14px;bottom:14px;padding:10px;border-radius:10px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+      border:1px solid rgba(255,255,255,0.03);
+      color:var(--muted);font-size:13px;backdrop-filter: blur(6px);
     }
 
-    button {
-      background: linear-gradient(90deg, #222, #555);
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.3s;
-    }
+    .note{font-size:12px;color:var(--muted);margin-top:10px}
+    .status{font-size:13px;color:#ffd59e}
 
-    button:hover {
-      background: linear-gradient(90deg, #555, #999);
-    }
-
-    #result {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 15px;
-      border-radius: 10px;
-      width: 400px;
-      max-height: 250px;
-      overflow-y: auto;
-      font-size: 13px;
-      white-space: pre-wrap;
+    @media (max-width:1100px){
+      .container{grid-template-columns:1fr; padding:0 12px}
+      .vis{min-height:420px}
     }
   </style>
 </head>
-
 <body>
-  <div id="ui">
-    <h3>🌀 Black Hole Simulator</h3>
-    <label>Mass (kg): <input id="M" type="number" value="1.989e30"></label><br>
-    <label>Distance (m): <input id="r" type="number" value="1e7"></label><br>
-    <label>Mode:
-      <select id="mode">
-        <option value="0">Viewer → Faller</option>
-        <option value="1">Faller → Viewer</option>
-      </select>
-    </label><br>
-    <label>Time (s): <input id="time" type="number" value="1"></label><br>
-    <label>Object Mass (kg): <input id="m" type="number" value="1"></label><br>
-    <label>Height (m): <input id="h" type="number" value="1"></label><br>
-    <button onclick="fetchData()">Simulate</button>
+  <div class="container">
+    <div class="panel">
+      <h1>Black Hole Time Dilation Simulator</h1>
+      <p class="lead">Enter mass, distance and time inputs. Frontend will try your backend and fallback to local JS calculations if necessary.</p>
+
+      <form id="simForm">
+        <div class="controls-grid">
+          <div class="col">
+            <label>Mass of black hole (M) in kilograms</label>
+            <input id="mass" type="number" step="any" value="5e30" required />
+          </div>
+          <div class="col">
+            <label>Distance from center (r) in meters</label>
+            <input id="radius" type="number" step="any" value="30000" required />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+          <label><input name="timemode" type="radio" value="0" checked /> Input viewer's time (get faller's time)</label>
+          <label style="margin-left:12px"><input name="timemode" type="radio" value="1" /> Input faller's time (get viewer's time)</label>
+        </div>
+
+        <div class="col" style="margin-top:10px">
+          <label>Time (seconds)</label>
+          <input id="time" type="number" step="any" value="1" />
+        </div>
+
+        <div class="row" style="margin-top:6px">
+          <button id="calcBtn" type="submit" class="small">Calculate</button>
+          <button id="resetBtn" type="button" class="ghost small">Reset</button>
+          <div style="flex:1"></div>
+          <div id="status" class="status"></div>
+        </div>
+      </form>
+
+      <div class="results" id="results">
+        <div style="font-weight:700">Results summary</div>
+        <div id="resultsBody" style="margin-top:8px;color:#dfefff;font-size:13px">
+          No calculations yet. Press "Calculate".
+        </div>
+      </div>
+
+      <div class="note">
+        This frontend tries <span class="mono">POST JSON</span> to your endpoint, then GET query params, then falls back to local JS computation if the API doesn't respond. The API base URL is:
+        <div class="mono" style="display:inline-block;margin-top:6px">https://api-endpoint-shivvcharan2099.replit.app</div>
+      </div>
+    </div>
+
+    <div class="vis">
+      <canvas id="bhCanvas"></canvas>
+      <div class="overlay">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700">Interactive preview</div>
+            <div style="font-size:12px;color:var(--muted)">Accretion disk + event horizon visualization (animated)</div>
+          </div>
+          <div style="text-align:right;color:var(--muted)"><div style="font-size:12px">Event horizon (visual only)</div></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div id="result">Simulation output will appear here...</div>
+<script>
+(function(){
+  // constants
+  const G = 6.674e-11;
+  const c = 3.0e8;
+  const API_BASE = 'https://api-endpoint-shivvcharan2099.replit.app';
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  // form elements
+  const form = document.getElementById('simForm');
+  const massEl = document.getElementById('mass');
+  const radiusEl = document.getElementById('radius');
+  const timeEl = document.getElementById('time');
+  const resultsBody = document.getElementById('resultsBody');
+  const statusEl = document.getElementById('status');
+  const resetBtn = document.getElementById('resetBtn');
 
-  <script>
-    const apiUrl = "https://operationarmstrong-gufc.onrender.com/blackhole";
+  // helper format
+  function fmt(x){
+    if (x === null || x === undefined) return '-';
+    if (!isFinite(x)) return x+'';
+    const a = Math.abs(x);
+    if (a !== 0 && (a >= 1e9 || a < 1e-3)) return x.toExponential(4);
+    return Number(x).toLocaleString(undefined, { maximumFractionDigits: 6 });
+  }
 
-    // --- 3D Scene Setup ---
-    const scene = new THREE.Scene();
-
-    // Add stars background
-    const starsGeometry = new THREE.BufferGeometry();
-    const starCount = 5000;
-    const starVertices = [];
-    for (let i = 0; i < starCount; i++) {
-      const x = (Math.random() - 0.5) * 2000;
-      const y = (Math.random() - 0.5) * 2000;
-      const z = (Math.random() - 0.5) * 2000;
-      starVertices.push(x, y, z);
+  // local computation identical to your python
+  function computeLocal({M, r, mode, inputTime, personHeight=1.8, smallMass=1}) {
+    const r_s = (2 * G * M) / (c * c);
+    const oneMinus = Math.max(0, 1 - r_s / r);
+    const sqrtTerm = Math.sqrt(oneMinus);
+    let t_faller = null, t_viewer = null;
+    if (mode === 0) { // input viewer -> faller
+      t_viewer = inputTime;
+      t_faller = t_viewer * sqrtTerm;
+    } else {
+      t_faller = inputTime;
+      t_viewer = t_faller / Math.max(1e-12, sqrtTerm);
     }
-    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
-    const stars = new THREE.Points(starsGeometry, starMaterial);
-    scene.add(stars);
 
-    // Add black hole (sphere)
-    const blackHoleGeometry = new THREE.SphereGeometry(5, 64, 64);
-    const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-    const blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
-    scene.add(blackHole);
+    const escapeVelocity = Math.sqrt((2 * G * M) / r);
+    const gravitationalAcceleration = (G * M) / (r * r);
+    const orbitalVelocity = Math.sqrt((G * M) / r);
+    const gravitationalRedshift = 1 / Math.sqrt(Math.max(1e-12, 1 - r_s / r)) - 1;
+    const viewersLengthFactor = sqrtTerm;
+    const gravitationalPotentialEnergy = -((G * smallMass * M) / r);
+    const accelerationHover = (G * M) / (r * r) * sqrtTerm;
+    const orbitalPeriod = 2 * Math.PI * Math.sqrt((r * r * r) / (G * M));
+    const tidalForce = (2 * G * M * personHeight) / Math.pow(r, 3);
 
-    // Add accretion disk
-    const diskGeometry = new THREE.RingGeometry(7, 20, 128);
-    const diskMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff6600,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.6
-    });
-    const disk = new THREE.Mesh(diskGeometry, diskMaterial);
-    disk.rotation.x = Math.PI / 2;
-    scene.add(disk);
+    return {
+      r_s, t_faller, t_viewer, escapeVelocity, gravitationalAcceleration,
+      orbitalVelocity, gravitationalRedshift, viewersLengthFactor,
+      gravitationalPotentialEnergy, accelerationHover, orbitalPeriod, tidalForce
+    };
+  }
 
-    // Add event horizon glow
-    const glowGeometry = new THREE.SphereGeometry(5.3, 64, 64);
-    const glowMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff3300,
-      transparent: true,
-      opacity: 0.2
-    });
-    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-    scene.add(glow);
-
-    // Camera and Renderer
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.z = 30;
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-
-    // Controls
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-
-    // Animate
-    function animate() {
-      requestAnimationFrame(animate);
-      disk.rotation.z += 0.005;
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // --- API Connection ---
-    async function fetchData() {
-      const M = document.getElementById("M").value;
-      const r = document.getElementById("r").value;
-      const mode = document.getElementById("mode").value;
-      const time = document.getElementById("time").value;
-      const m = document.getElementById("m").value;
-      const h = document.getElementById("h").value;
-
-      const url = `${apiUrl}?M=${M}&r=${r}&mode=${mode}&time=${time}&m=${m}&h=${h}`;
-      document.getElementById("result").innerText = "⏳ Calculating...";
-
+  // Attempt contacting API: POST JSON then GET fallback
+  async function tryApi(payload) {
+    const endpoints = [API_BASE, API_BASE + '/calculate', API_BASE + '/api'];
+    // try POST JSON
+    for (const url of endpoints) {
       try {
-        const response = await fetch(url);
-        const text = await response.text();
-        document.getElementById("result").innerHTML = text;
+        statusEl.textContent = 'Trying POST ' + url;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(payload),
+          mode: 'cors'
+        });
+        if (resp.ok) {
+          // try parse JSON
+          try {
+            const data = await resp.json();
+            return {ok:true, data, url, method:'POST'};
+          } catch (e) {
+            // not JSON, return text
+            const txt = await resp.text();
+            return {ok:true, data: {raw:txt}, url, method:'POST'};
+          }
+        } else {
+          // not ok, continue to try GET
+        }
       } catch (err) {
-        document.getElementById("result").innerText = "⚠️ Error connecting to API.";
-        console.error(err);
+        // network or CORS error -> continue to next attempt
       }
     }
 
-    // Resize handling
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+    // try GET with query params
+    const qp = new URLSearchParams(payload).toString();
+    for (const url of endpoints) {
+      const target = url + (url.includes('?') ? '&' : '?') + qp;
+      try {
+        statusEl.textContent = 'Trying GET ' + url;
+        const resp = await fetch(target, { method:'GET', mode:'cors' });
+        if (resp.ok) {
+          try {
+            const data = await resp.json();
+            return {ok:true, data, url, method:'GET'};
+          } catch (e) {
+            const txt = await resp.text();
+            return {ok:true, data:{raw:txt}, url, method:'GET'};
+          }
+        }
+      } catch (err) {
+        // continue
+      }
+    }
+
+    // failed all attempts
+    return {ok:false};
+  }
+
+  // build payload from form
+  function buildPayload(){
+    const M = Number(massEl.value);
+    const r = Number(radiusEl.value);
+    const mode = Number(document.querySelector('input[name="timemode"]:checked').value);
+    const inputTime = Number(timeEl.value);
+    return {M, r, mode, inputTime, personHeight:1.8, smallMass:1};
+  }
+
+  // show results in UI (JS object with fields)
+  function showResults(sourceLabel, data) {
+    resultsBody.innerHTML = `
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">computed via <span class="mono">${sourceLabel}</span></div>
+      <div>Schwarzschild radius r_s: <span class="mono">${fmt(data.r_s)} m</span></div>
+      <div>Faller's time: <span class="mono">${fmt(data.t_faller)} s</span></div>
+      <div>Viewer's time: <span class="mono">${fmt(data.t_viewer)} s</span></div>
+      <div>Escape velocity: <span class="mono">${fmt(data.escapeVelocity)} m/s</span></div>
+      <div>Gravitational acceleration: <span class="mono">${fmt(data.gravitationalAcceleration)} m/s²</span></div>
+      <div>Orbital velocity: <span class="mono">${fmt(data.orbitalVelocity)} m/s</span></div>
+      <div>Gravitational redshift: <span class="mono">${fmt(data.gravitationalRedshift)}</span></div>
+      <div>Gravitational potential energy (1 kg): <span class="mono">${fmt(data.gravitationalPotentialEnergy)} J</span></div>
+      <div>Acceleration to hover: <span class="mono">${fmt(data.accelerationHover)} m/s²</span></div>
+      <div>Orbital period: <span class="mono">${fmt(data.orbitalPeriod)} s</span></div>
+      <div>Tidal force (for 1.8 m): <span class="mono">${fmt(data.tidalForce)} N</span></div>
+    `;
+  }
+
+  // main submit handler
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    statusEl.textContent = 'Calculating...';
+    const payload = buildPayload();
+
+    // try API (POST then GET)
+    const apiResp = await tryApi(payload);
+    if (apiResp.ok && apiResp.data) {
+      // If the API returns fields matching our local names, use them.
+      // Else, if API returned raw text, fall back to local compute.
+      let data = apiResp.data;
+      // detect if data contains needed numeric keys
+      const needKeys = ['r_s','t_faller','t_viewer','escapeVelocity'];
+      const hasKeys = needKeys.every(k => k in data && typeof data[k] === 'number');
+      if (!hasKeys) {
+        // try to interpret nested keys (some backends return {"data": {...}})
+        if ('data' in data && typeof data.data === 'object') {
+          data = data.data;
+        }
+      }
+      // final check
+      const finalHas = needKeys.every(k => k in data && typeof data[k] === 'number');
+      if (finalHas) {
+        statusEl.textContent = `Used API (${apiResp.method} ${apiResp.url})`;
+        showResults('remote API', data);
+      } else {
+        // fallback to local compute (but still notify)
+        statusEl.textContent = `API responded but format unclear — using local math`;
+        const local = computeLocal(payload);
+        showResults('local (API format mismatch)', local);
+      }
+    } else {
+      // no API response -> compute locally
+      statusEl.textContent = 'API unreachable — computed locally';
+      const local = computeLocal(payload);
+      showResults('local', local);
+    }
+  });
+
+  resetBtn.addEventListener('click', function(){
+    massEl.value = '5e30';
+    radiusEl.value = '30000';
+    timeEl.value = '1';
+    document.querySelector('input[name="timemode"][value="0"]').checked = true;
+    resultsBody.innerHTML = 'No calculations yet. Press "Calculate".';
+    statusEl.textContent = '';
+  });
+
+  // ===========================
+  // Canvas animation (2D) to mimic 3D-ish accretion disk
+  // ===========================
+  const canvas = document.getElementById('bhCanvas');
+  const ctx = canvas.getContext('2d');
+  let DPR = window.devicePixelRatio || 1;
+
+  function resizeCanvas(){
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(300, Math.floor(rect.width * DPR));
+    canvas.height = Math.max(300, Math.floor(rect.height * DPR));
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  let t = 0;
+  function draw(){
+    resizeCanvas();
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    // background glow
+    const bg = ctx.createRadialGradient(w*0.5, h*0.45, 10, w*0.5, h*0.45, Math.max(w,h));
+    bg.addColorStop(0, '#05050b');
+    bg.addColorStop(1, '#000000');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0,0,w,h);
+
+    const cx = w*0.5, cy = h*0.5;
+    const diskMax = Math.min(w,h) * 0.38;
+    const inner = diskMax * 0.6;
+
+    // layered rings to simulate 3D accretion disk
+    for (let i=0;i<10;i++){
+      const frac = i/10;
+      const rOuter = inner + (diskMax - inner) * frac;
+      const thickness = 12 * (1-frac) + 2;
+      const rot = t * (0.0006 + frac*0.001) * (frac>0.5 ? -1 : 1);
+      drawDiskRing(ctx, cx, cy, rOuter, thickness, rot, frac, t);
+    }
+
+    // black sphere for event horizon
+    const horizon = inner * 0.78;
+    const g = ctx.createRadialGradient(cx, cy, horizon*0.1, cx, cy, horizon*2.2);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(0.7, 'rgba(2,2,6,1)');
+    g.addColorStop(1, 'rgba(20,20,30,0.95)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, horizon, 0, Math.PI*2);
+    ctx.fill();
+
+    // subtle lensing ring
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,240,200,0.06)';
+    ctx.lineWidth = 2 * DPR;
+    ctx.arc(cx, cy, horizon*1.25 + Math.sin(t*0.004)*3, 0, Math.PI*2);
+    ctx.stroke();
+
+    t += 1;
+    requestAnimationFrame(draw);
+  }
+
+  function drawDiskRing(ctx, cx, cy, radius, thickness, rotation, darkness, time){
+    const segments = 140;
+    const tilt = 0.42; // vertical compression for tilt
+    for (let s=0;s<segments;s++){
+      const a0 = (s/segments) * Math.PI*2;
+      const a1 = ((s+1)/segments) * Math.PI*2;
+      const x0 = cx + Math.cos(a0 + rotation) * radius;
+      const y0 = cy + Math.sin(a0 + rotation) * radius * (1 - tilt);
+      const x1 = cx + Math.cos(a1 + rotation) * radius;
+      const y1 = cy + Math.sin(a1 + rotation) * radius * (1 - tilt);
+      const bright = Math.max(0, 0.6 - darkness + Math.sin((s + time*0.32)*0.08)*0.12);
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      const rcol = Math.floor(210 - darkness*110);
+      const gcol = Math.floor(120 - darkness*60);
+      const bcol = Math.floor(60 - darkness*30);
+      ctx.strokeStyle = `rgba(${rcol}, ${gcol}, ${bcol}, ${Math.min(0.9, bright)*0.45})`;
+      ctx.lineWidth = thickness * DPR * (1 - darkness*0.6);
+      ctx.stroke();
+    }
+  }
+
+  requestAnimationFrame(draw);
+
+  // initial status check: quick probe of the root to show the user what we found (optional)
+  (async function quickProbe(){
+    try {
+      const resp = await fetch(API_BASE, { method:'GET', mode:'cors' });
+      if (resp.ok) {
+        statusEl.textContent = 'API root reachable (GET).';
+      } else {
+        statusEl.textContent = 'API root returned HTTP ' + resp.status + ' — will try POST/GET at multiple endpoints when calculating.';
+      }
+    } catch (err) {
+      statusEl.textContent = 'API root not reachable (network/CORS). Frontend will try multiple approaches.';
+    }
+  })();
+
+})();
+</script>
 </body>
 </html>
