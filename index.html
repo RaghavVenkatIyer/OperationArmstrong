@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🌌 Interactive Black Hole Simulator</title>
+  <title>🌌 Black Hole Simulator</title>
   <style>
     body {
       margin: 0;
@@ -15,10 +15,10 @@
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       padding: 15px;
       border-radius: 10px;
-      max-width: 300px;
+      width: 280px;
       z-index: 10;
     }
     input, select, button {
@@ -28,6 +28,7 @@
       border-radius: 5px;
       border: none;
       outline: none;
+      font-size: 14px;
     }
     button {
       background-color: crimson;
@@ -46,12 +47,16 @@
       background: rgba(0, 0, 0, 0.6);
       padding: 10px;
       border-radius: 10px;
-      width: 400px;
+      width: 420px;
       max-height: 250px;
       overflow-y: auto;
       font-family: monospace;
       font-size: 0.9em;
       white-space: pre-wrap;
+      z-index: 10;
+    }
+    canvas {
+      display: block;
     }
   </style>
 </head>
@@ -76,69 +81,97 @@
     <button id="simulate">Simulate</button>
   </div>
 
-  <div id="output"></div>
+  <div id="output">Results will appear here...</div>
   <canvas id="scene"></canvas>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
   <script>
-    // === 3D Scene Setup ===
+    // === SCENE SETUP ===
     const canvas = document.querySelector('#scene');
-    const renderer = new THREE.WebGLRenderer({ canvas });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1e10);
-    camera.position.z = 50;
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+    camera.position.set(0, 15, 60);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Add light
-    const light = new THREE.PointLight(0xffffff, 2);
-    light.position.set(50, 50, 50);
-    scene.add(light);
+    // === LIGHT ===
+    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambient);
+    const point = new THREE.PointLight(0xffffff, 1.5);
+    point.position.set(30, 30, 30);
+    scene.add(point);
 
-    // Create black hole core
-    const blackHoleGeometry = new THREE.SphereGeometry(5, 64, 64);
-    const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-    const blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+    // === BLACK HOLE CORE ===
+    const blackHoleGeo = new THREE.SphereGeometry(5, 64, 64);
+    const blackHoleMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const blackHole = new THREE.Mesh(blackHoleGeo, blackHoleMat);
     scene.add(blackHole);
 
-    // Accretion disk
-    const diskGeometry = new THREE.RingGeometry(7, 20, 128);
-    const diskMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff3300,
+    // === ACCRETION DISK ===
+    const diskGeo = new THREE.RingGeometry(6, 14, 256);
+    const diskMat = new THREE.MeshBasicMaterial({
+      color: 0xff6600,
       side: THREE.DoubleSide,
       emissive: 0xff3300,
-      emissiveIntensity: 1,
+      emissiveIntensity: 2,
       transparent: true,
       opacity: 0.8
     });
-    const accretionDisk = new THREE.Mesh(diskGeometry, diskMaterial);
-    accretionDisk.rotation.x = Math.PI / 2;
-    scene.add(accretionDisk);
+    const disk = new THREE.Mesh(diskGeo, diskMat);
+    disk.rotation.x = Math.PI / 2;
+    scene.add(disk);
 
-    // Redshift glow
-    const glowGeometry = new THREE.SphereGeometry(6, 64, 64);
-    const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 });
-    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    // === REDSHIFT GLOW ===
+    const glowGeo = new THREE.SphereGeometry(7, 64, 64);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      transparent: true,
+      opacity: 0.3
+    });
+    const glow = new THREE.Mesh(glowGeo, glowMat);
     scene.add(glow);
 
-    // Animate
+    // === STARFIELD BACKGROUND ===
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 2000;
+    const starVertices = [];
+    for (let i = 0; i < starCount; i++) {
+      const x = (Math.random() - 0.5) * 2000;
+      const y = (Math.random() - 0.5) * 2000;
+      const z = (Math.random() - 0.5) * 2000;
+      starVertices.push(x, y, z);
+    }
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    // === ANIMATION LOOP ===
     function animate() {
       requestAnimationFrame(animate);
-      accretionDisk.rotation.z += 0.002;
-      glow.rotation.y += 0.001;
+      disk.rotation.z += 0.005;
+      glow.rotation.y += 0.002;
       controls.update();
       renderer.render(scene, camera);
     }
     animate();
 
-    // === Simulation Logic ===
+    // === HANDLE WINDOW RESIZE ===
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // === SIMULATION LOGIC ===
     document.getElementById('simulate').addEventListener('click', async () => {
       const params = {
         M: document.getElementById('M').value,
@@ -148,21 +181,25 @@
         m: document.getElementById('m').value,
         h: document.getElementById('h').value
       };
-
       const query = new URLSearchParams(params).toString();
       const url = `https://d258dadd-c73d-442d-bbcc-1570d3c8e404-00-2dx0zyosk1khh.kirk.replit.dev/blackhole?${query}`;
+
       try {
         const res = await fetch(url);
         const text = await res.text();
         document.getElementById('output').innerHTML = text;
 
-        // Adjust black hole size & glow intensity dynamically
+        // Adjust black hole dynamically
         const mass = parseFloat(params.M);
         const distance = parseFloat(params.r);
-        const scale = Math.log10(mass) / 2;
+        const scale = Math.min(30, Math.max(2, Math.log10(mass) / 2));
         blackHole.scale.set(scale, scale, scale);
-        glow.material.opacity = Math.min(1, 0.3 + (1 / distance) * 1e6);
-        diskMaterial.emissiveIntensity = Math.min(5, Math.log10(mass) / 2);
+        disk.scale.set(scale * 1.5, scale * 1.5, scale * 1.5);
+        glow.scale.set(scale * 1.4, scale * 1.4, scale * 1.4);
+
+        // Change color intensity based on mass
+        disk.material.emissiveIntensity = Math.min(4, Math.log10(mass) / 3);
+        glow.material.opacity = Math.min(0.9, 0.2 + 1 / (distance / 1e6));
       } catch (err) {
         document.getElementById('output').innerText = "Error: " + err.message;
       }
