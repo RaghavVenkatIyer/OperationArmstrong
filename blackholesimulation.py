@@ -1,88 +1,117 @@
+from flask import Flask, request, jsonify
 import math
-from flask import Flask, request, jsonify, render_template_string
-from flask_cors import CORS
+import sys
+from io import StringIO
 
 app = Flask(__name__)
-CORS(app)
-
-# Constants
-G = 6.674e-11
-c = 3.0e8
 
 @app.route('/')
 def home():
-    # Serve the full interactive simulation frontend
-    return render_template_string(open("templates/index.html", "r").read())
+    return "🌌 Black Hole Physics API is live and running — use /blackhole endpoint!"
 
 @app.route('/blackhole')
 def blackhole():
+    # Redirect print output
+    old_stdout = sys.stdout
+    sys.stdout = mystdout = StringIO()
+
+    # Constants
+    G = 6.674e-11
+    c = 3.0e8
+
     try:
-        # Parse inputs
+        # Get parameters safely
         M = float(request.args.get('M', 0))
         r = float(request.args.get('r', 0))
-        mode = str(request.args.get('mode', '0'))
-        t_value = float(request.args.get('time', 0)) if request.args.get('time') else None
-        lengthselection = request.args.get('lengthselection', None)
-        viewerslength = request.args.get('viewerslength', None)
-        fallerslength = request.args.get('fallerslength', None)
-        m = float(request.args.get('m', 0)) if request.args.get('m') else None
-        h = float(request.args.get('h', 0)) if request.args.get('h') else None
+        mode = request.args.get('mode', '0')  # 0=faller, 1=viewer
+        t_value = float(request.args.get('time', 1))
+        m = float(request.args.get('m', 1))
+        h = float(request.args.get('h', 1))
 
+        # Physics safety check
         if M <= 0 or r <= 0:
-            return jsonify({"error": "Mass (M) and distance (r) must be positive."}), 400
+            raise ValueError("Mass and distance must be positive values.")
 
-        # Compute Schwarzschild radius
         r_s = (2 * G * M) / c**2
         if r <= r_s:
-            return jsonify({"error": "Distance (r) must be greater than Schwarzschild radius."}), 400
+            raise ValueError("Distance must be greater than Schwarzschild radius.")
 
-        results = {
+        print(f"Schwarzschild radius = {r_s} m")
+
+        # Time dilation
+        if mode == '0':  # viewer -> faller
+            t_faller = t_value * math.sqrt(1 - r_s / r)
+            print(f"Faller's time = {t_faller} s")
+        else:  # faller -> viewer
+            t_viewer = t_value / math.sqrt(1 - r_s / r)
+            print(f"Viewer's time = {t_viewer} s")
+
+        # Escape velocity
+        v_escape = math.sqrt((2 * G * M) / r)
+        print(f"Escape velocity = {v_escape} m/s")
+
+        # Gravitational acceleration
+        g_acc = (G * M) / (r**2)
+        print(f"Gravitational acceleration = {g_acc} m/s²")
+
+        # Orbital velocity
+        v_orb = math.sqrt((G * M) / r)
+        print(f"Orbital velocity = {v_orb} m/s")
+
+        # Gravitational redshift
+        redshift = (1 / math.sqrt(1 - (r_s / r))) - 1
+        print(f"Gravitational redshift = {redshift}")
+
+        # Gravitational potential energy
+        U = -((G * m * M) / r)
+        print(f"Gravitational potential energy = {U} J")
+
+        # Hover acceleration
+        hover_a = (G * M / r**2) * math.sqrt(1 - (r_s / r))
+        print(f"Hover acceleration = {hover_a} m/s²")
+
+        # Orbital period
+        T = 2 * math.pi * math.sqrt(r**3 / (G * M))
+        print(f"Orbital period = {T} s")
+
+        # Tidal force
+        F_tidal = (2 * G * M * h) / (r**3)
+        print(f"Tidal force = {F_tidal} N")
+
+        # Restore stdout
+        sys.stdout = old_stdout
+
+        # Combine text and JSON for frontend
+        output_text = mystdout.getvalue()
+        data = {
             "Schwarzschild_radius": r_s,
-            "Escape_velocity": math.sqrt((2 * G * M) / r),
-            "Gravitational_acceleration": (G * M) / r**2,
-            "Orbital_velocity": math.sqrt((G * M) / r),
-            "Gravitational_redshift": (1 / math.sqrt(1 - (r_s / r))) - 1,
+            "Escape_velocity": v_escape,
+            "Gravitational_acceleration": g_acc,
+            "Orbital_velocity": v_orb,
+            "Gravitational_redshift": redshift,
+            "Potential_energy": U,
+            "Hover_acceleration": hover_a,
+            "Orbital_period": T,
+            "Tidal_force": F_tidal,
         }
 
-        # Time dilation calculations
-        if t_value:
-            if mode == '0':  # viewer → faller
-                t_faller = t_value * math.sqrt(1 - r_s / r)
-                results["Faller_time"] = t_faller
-            else:  # faller → viewer
-                t_viewer = t_value / math.sqrt(1 - r_s / r)
-                results["Viewer_time"] = t_viewer
+        if mode == '0':
+            data["Faller_time"] = t_faller
+        else:
+            data["Viewer_time"] = t_viewer
 
-        # Length contraction
-        if lengthselection is not None:
-            try:
-                ls = int(lengthselection)
-                if ls == 0 and viewerslength:
-                    viewers_len = float(viewerslength)
-                    faller_len = viewers_len * math.sqrt(1 - r_s / r)
-                    results["Faller_length"] = faller_len
-                elif ls == 1 and fallerslength:
-                    faller_len = float(fallerslength)
-                    viewers_len = faller_len / math.sqrt(1 - r_s / r)
-                    results["Viewer_length"] = viewers_len
-            except ValueError:
-                pass
+        return jsonify({
+            "text_output": output_text,
+            "data": data
+        })
 
-        # Potential energy and tidal forces
-        if m:
-            results["Gravitational_potential_energy"] = -((G * m * M) / r)
-        if h:
-            results["Tidal_force"] = (2 * G * M * h) / (r ** 3)
-
-        # Hover acceleration & orbital period
-        results["Hover_acceleration"] = (G * M / r ** 2) * math.sqrt(1 - (r_s / r))
-        results["Orbital_period"] = 2 * math.pi * math.sqrt(r ** 3 / (G * M))
-
-        return jsonify(results)
+    except ValueError as e:
+        sys.stdout = old_stdout
+        return jsonify({"error": str(e)})
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
+        sys.stdout = old_stdout
+        return jsonify({"error": "Unexpected error: " + str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=81)
