@@ -1,192 +1,297 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Hole Simulator</title>
-<style>
-  * { box-sizing: border-box; font-family: "Poppins", sans-serif; color: #fff; }
-  body {
-    margin: 0;
-    overflow: hidden;
-    background: radial-gradient(circle at center, #000010 0%, #000000 100%);
-  }
-
-  canvas#space {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: -1;
-  }
-
-  .container {
-    position: relative;
-    width: 90%;
-    max-width: 600px;
-    margin: 60px auto;
-    background: rgba(0,0,0,0.7);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 0 20px rgba(255,255,255,0.1);
-  }
-
-  h1 {
-    text-align: center;
-    font-size: 1.8em;
-    margin-bottom: 20px;
-  }
-
-  label {
-    display: block;
-    margin: 12px 0 6px;
-    font-size: 1em;
-  }
-
-  input, select {
-    width: 100%;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-    font-size: 1em;
-  }
-
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 20px;
-    border: none;
-    border-radius: 10px;
-    background: linear-gradient(90deg, #1a73e8, #000d8a);
-    color: white;
-    font-size: 1.1em;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-
-  button:hover {
-    background: linear-gradient(90deg, #000d8a, #1a73e8);
-  }
-
-  pre#output {
-    background: rgba(255,255,255,0.08);
-    padding: 15px;
-    margin-top: 25px;
-    border-radius: 10px;
-    white-space: pre-wrap;
-    font-size: 0.95em;
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interactive 3D Black Hole</title>
+  <style>
+    :root{--bg:#0b0b0f;--panel:#0f1720;--accent:#ff7a18;--muted:#98a0b3}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#e6eef8;background:radial-gradient(900px 600px at 10% 10%,#07101a 0%, transparent 10%),var(--bg);} 
+    #app{height:100vh;display:grid;grid-template-columns:1fr 340px;gap:18px;padding:22px}
+    #viewport{border-radius:14px;box-shadow:0 8px 30px rgba(2,6,23,0.6);overflow:hidden;background:linear-gradient(180deg,#06060a 0%, #0b0d11 100%);} 
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:18px;border-radius:12px;color:#dbe8ff}
+    .controls{width:100%;display:flex;flex-direction:column;gap:12px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=range]{width:100%}
+    input[type=number]{width:120px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .muted{color:var(--muted);font-size:13px}
+    button{background:linear-gradient(90deg,var(--accent),#ffd08a);border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+    .footer{font-size:12px;color:var(--muted);margin-top:8px}
+    .legend{display:flex;gap:8px;align-items:center}
+    .dot{width:12px;height:12px;border-radius:50%}
+    .dot.rim{background:linear-gradient(180deg,#ffd28a,#ff7a18)}
+    .dot.disk{background:linear-gradient(90deg,#ff4f6c,#ffa96b)}
+    @media (max-width:980px){#app{grid-template-columns:1fr} .panel{position:relative;z-index:2}}
+  </style>
 </head>
 <body>
-<canvas id="space"></canvas>
+  <div id="app">
+    <div id="viewport" class="panel"></div>
 
-<div class="container">
-  <h1>🌀 Black Hole Simulator</h1>
+    <div class="panel">
+      <h2 style="margin:0 0 6px 0">Interactive Black Hole</h2>
+      <div class="muted" style="margin-bottom:12px">Drag on the hole to pull & contract it. Change the event horizon radius (in arbitrary scene units) below and press Apply.</div>
 
-  <label>Enter the mass of black hole (kilograms):</label>
-  <input id="mass" type="number" step="any">
+      <div class="controls">
+        <div>
+          <label>Event horizon radius</label>
+          <div class="row">
+            <input id="ehRange" type="range" min="0.5" max="6" step="0.01" value="2">
+            <input id="ehNumber" type="number" min="0.5" max="6" step="0.01" value="2">
+          </div>
+        </div>
 
-  <label>Enter the distance from center (meters):</label>
-  <input id="distance" type="number" step="any">
+        <div>
+          <label>Drag sensitivity (how much pulling affects radius)</label>
+          <input id="sensitivity" type="range" min="0.1" max="2" step="0.01" value="0.8">
+        </div>
 
-  <label>Choose what you want to calculate:</label>
-  <select id="timeChoice">
-    <option value="viewer">Time for viewer outside the black hole</option>
-    <option value="faller">Time for object falling in</option>
-  </select>
+        <div class="row">
+          <button id="applyBtn">Apply</button>
+          <button id="resetBtn" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit">Reset</button>
+        </div>
 
-  <label>Enter the time (seconds):</label>
-  <input id="time" type="number" step="any">
+        <div style="margin-top:8px">
+          <div class="row"><div class="muted">Current radius</div><div id="currentValue" style="font-weight:700">2.00</div></div>
+          <div class="row"><div class="muted">Drag state</div><div id="dragState" class="muted">idle</div></div>
+        </div>
 
-  <label>Enter mass of the object (kilograms):</label>
-  <input id="objectMass" type="number" step="any">
+        <div class="footer">
+          <div style="margin-bottom:6px" class="legend"><div class="dot rim"></div><div class="muted">Event horizon / horizon rim</div></div>
+          <div class="legend"><div class="dot disk"></div><div class="muted">Accretion disk</div></div>
+        </div>
+      </div>
 
-  <label>Enter height from which object falls (meters):</label>
-  <input id="height" type="number" step="any">
+    </div>
+  </div>
 
-  <button onclick="simulate()">Calculate</button>
-  <pre id="output"></pre>
-</div>
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.158.0/examples/jsm/controls/OrbitControls.js';
 
-<script>
-async function simulate() {
-  const mass = parseFloat(document.getElementById("mass").value);
-  const distance = parseFloat(document.getElementById("distance").value);
-  const timeChoice = document.getElementById("timeChoice").value;
-  const time = parseFloat(document.getElementById("time").value);
-  const objectMass = parseFloat(document.getElementById("objectMass").value);
-  const height = parseFloat(document.getElementById("height").value);
-  const output = document.getElementById("output");
+    // --------- Basic scene setup ---------
+    const container = document.getElementById('viewport');
+    const scene = new THREE.Scene();
+    const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    container.appendChild(renderer.domElement);
 
-  output.textContent = "Calculating...\n";
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+    camera.position.set(0,1.6,6);
 
-  try {
-    const res = await fetch("https://api-endpoint-shivvcharan2099.replit.app/blackhole", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mass, distance, timeChoice, time, objectMass, height })
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false; controls.maxPolarAngle = Math.PI/2 + 0.3; controls.minDistance = 2; controls.maxDistance = 30;
+
+    window.addEventListener('resize', onWindowResize);
+    function onWindowResize(){
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      camera.aspect = container.clientWidth/container.clientHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    scene.background = new THREE.Color(0x02020b);
+    const hemi = new THREE.HemisphereLight(0xffffff,0x111111,0.35); scene.add(hemi);
+
+    // ---------- Black hole core (sphere with fresnel rim) ----------
+    const coreGeo = new THREE.SphereGeometry(1,64,64);
+
+    const coreVertexShader = `
+      varying vec3 vNormal;
+      varying vec3 vPos;
+      void main(){
+        vNormal = normalize(normalMatrix * normal);
+        vPos = (modelViewMatrix * vec4(position,1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }
+    `;
+    const coreFragmentShader = `
+      precision mediump float;
+      uniform float uTime;
+      uniform vec3 uColor;
+      uniform vec3 uRimColor;
+      uniform float uRimPower;
+      varying vec3 vNormal;
+      varying vec3 vPos;
+      void main(){
+        float rim = 1.0 - max(0.0, dot(normalize(vPos), vNormal));
+        rim = pow(rim, uRimPower);
+        vec3 col = mix(uColor, uRimColor, rim);
+        float alpha = 1.0;
+        col += uRimColor * rim * 0.06 * (0.6 + 0.4 * sin(uTime * 2.0));
+        gl_FragColor = vec4(col, alpha);
+      }
+    `;
+    const coreMat = new THREE.ShaderMaterial({
+      transparent:true,
+      uniforms:{
+        uTime:{value:0},
+        uColor:{value:new THREE.Color(0x000000)},
+        uRimColor:{value:new THREE.Color(0xff8b42)},
+        uRimPower:{value:2.4}
+      },
+      vertexShader: coreVertexShader,
+      fragmentShader: coreFragmentShader
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    scene.add(core);
+
+    // ---------- Accretion disk (textured torus) ----------
+    const diskGeo = new THREE.TorusGeometry(1.8,0.35,64,128);
+
+    const diskVertexShader = `
+      varying vec2 vUv;
+      varying vec3 vPos;
+      void main(){
+        vUv = uv;
+        vPos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }
+    `;
+    const diskFragmentShader = `
+      precision mediump float;
+      uniform float uTime;
+      varying vec2 vUv;
+      varying vec3 vPos;
+      float rand(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453123);}
+      void main(){
+        float r = length(vUv - 0.5);
+        float stripe = smoothstep(0.09,0.11,abs(sin((vUv.x + uTime * 0.12) * 60.0))) * 0.9;
+        vec3 col = mix(vec3(1.0,0.6,0.2), vec3(1.0,0.2,0.4), r * 2.0);
+        col *= 0.35 + stripe * 1.2;
+        float alpha = smoothstep(0.55,0.4,r);
+        alpha *= 0.95;
+        gl_FragColor = vec4(col, alpha);
+      }
+    `;
+    const diskMat = new THREE.ShaderMaterial({
+      transparent:true,
+      side:THREE.DoubleSide,
+      uniforms:{uTime:{value:0}},
+      vertexShader: diskVertexShader,
+      fragmentShader: diskFragmentShader
+    });
+    const disk = new THREE.Mesh(diskGeo,diskMat);
+    disk.rotation.x = Math.PI/2 - 0.25;
+    disk.position.y = -0.06;
+    scene.add(disk);
+
+    // ---------- Gravitational lensing halo ----------
+    const haloGeo = new THREE.RingGeometry(2.2, 2.9, 64);
+    const haloVertexShader = `
+      varying vec2 vUv;
+      void main(){
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }
+    `;
+    const haloFragmentShader = `
+      precision mediump float;
+      varying vec2 vUv;
+      uniform float uTime;
+      void main(){
+        float g = 1.0 - length(vUv - 0.5);
+        g = pow(g, 1.8);
+        vec3 col = vec3(1.0,0.8,0.6) * g * 0.35 * (0.8 + 0.2 * sin(uTime * 1.6));
+        gl_FragColor = vec4(col, g * 0.6);
+      }
+    `;
+    const haloMat = new THREE.ShaderMaterial({
+      transparent:true,side:THREE.DoubleSide,depthWrite:false,
+      uniforms:{uTime:{value:0}},
+      vertexShader: haloVertexShader,
+      fragmentShader: haloFragmentShader
+    });
+    const halo = new THREE.Mesh(haloGeo, haloMat); halo.rotation.x = Math.PI/2; halo.position.y = -0.04; scene.add(halo);
+
+    // ---------- subtle background star field ----------
+    const stars = new THREE.BufferGeometry();
+    const starCount = 900;
+    const positions = new Float32Array(starCount*3);
+    for(let i=0;i<starCount;i++){positions[i*3+0]=(Math.random()*2-1)*60;positions[i*3+1]=(Math.random()*2-1)*40;positions[i*3+2]=(Math.random()*2-1)*60;}
+    stars.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    const starMat = new THREE.PointsMaterial({size:0.06,transparent:true,opacity:0.9});
+    const starField = new THREE.Points(stars, starMat); scene.add(starField);
+
+    // ---------- parameters & UI linkage ----------
+    const ehRange = document.getElementById('ehRange');
+    const ehNumber = document.getElementById('ehNumber');
+    const applyBtn = document.getElementById('applyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const sensitivity = document.getElementById('sensitivity');
+    const currentValue = document.getElementById('currentValue');
+    const dragState = document.getElementById('dragState');
+
+    let targetRadius = parseFloat(ehRange.value);
+    let actualRadius = targetRadius;
+    let pulling = false; let startY = 0; let startRadius = targetRadius;
+
+    ehRange.addEventListener('input', e=>{ehNumber.value = ehRange.value});
+    ehNumber.addEventListener('input', e=>{ehRange.value = ehNumber.value});
+
+    applyBtn.addEventListener('click', ()=>{targetRadius = parseFloat(ehNumber.value); if(targetRadius<0.5) targetRadius=0.5; if(targetRadius>6) targetRadius=6; currentValue.textContent = targetRadius.toFixed(2)});
+    resetBtn.addEventListener('click', ()=>{targetRadius = 2; ehRange.value = 2; ehNumber.value = 2; currentValue.textContent = '2.00'});
+
+    core.scale.setScalar(targetRadius);
+    disk.scale.setScalar(targetRadius*1.05);
+    halo.scale.setScalar(targetRadius*1.08);
+
+    renderer.domElement.style.touchAction = 'none';
+    renderer.domElement.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointerup', onUp);
+    function getPointer(ev){ const rect = renderer.domElement.getBoundingClientRect(); return {x:(ev.clientX-rect.left)/rect.width, y:(ev.clientY-rect.top)/rect.height}; }
+
+    function onDown(e){
+      const p = getPointer(e);
+      const dx = p.x - 0.5; const dy = p.y - 0.5;
+      if(Math.sqrt(dx*dx+dy*dy) < 0.45){ pulling = true; startY = e.clientY; startRadius = targetRadius; dragState.textContent = 'pulling'; }
+    }
+
+    function onUp(e){ if(!pulling) return; pulling=false;
+      targetRadius = Math.max(0.2, actualRadius); ehRange.value = targetRadius; ehNumber.value = targetRadius; currentValue.textContent = targetRadius.toFixed(2); dragState.textContent = 'idle'; }
+
+    renderer.domElement.addEventListener('pointermove', function(e){ if(!pulling) return; const dy = (e.clientY - startY);
+      const sens = parseFloat(sensitivity.value);
+      const change = (dy / window.innerHeight) * sens * 6.0;
+      actualRadius = Math.max(0.1, startRadius - change);
+      currentValue.textContent = actualRadius.toFixed(2);
     });
 
-    if (!res.ok) throw new Error("Server error");
-    const data = await res.json();
-    output.textContent = data.result || JSON.stringify(data, null, 2);
-  } catch (e) {
-    output.textContent += "\n⚠️ Could not connect to API. Running local fallback...\n";
+    // ---------- animation loop ----------
+    const clock = new THREE.Clock();
+    function animate(){
+      const t = clock.getElapsedTime();
+      requestAnimationFrame(animate);
 
-    // --- Local fallback (matches Python logic) ---
-    const G = 6.674e-11, c = 3e8;
-    const schwarzschildRadius = (2 * G * mass) / (c ** 2);
-    const gravity = (G * mass) / (distance ** 2);
-    const timeDilation = 1 / Math.sqrt(1 - (2 * G * mass) / (distance * c ** 2));
-    const potentialEnergy = objectMass * gravity * height;
+      if(!pulling){ actualRadius += (targetRadius - actualRadius)*0.08; }
 
-    let result = "";
-    result += `Schwarzschild radius: ${schwarzschildRadius.toExponential(3)} m\n`;
-    result += `Gravitational acceleration: ${gravity.toExponential(3)} m/s²\n`;
-    result += `Time dilation factor: ${timeDilation.toFixed(6)}\n`;
-    result += `Potential energy: ${potentialEnergy.toExponential(3)} J\n`;
+      core.scale.x = core.scale.y = core.scale.z = THREE.MathUtils.lerp(core.scale.x, actualRadius, 0.22);
+      disk.scale.setScalar(THREE.MathUtils.lerp(disk.scale.x, actualRadius*1.05, 0.16));
+      halo.scale.setScalar(THREE.MathUtils.lerp(halo.scale.x, actualRadius*1.08, 0.14));
 
-    if (timeChoice === "viewer")
-      result += `\nViewer time: ${time * timeDilation} s`;
-    else
-      result += `\nFaller time: ${time / timeDilation} s`;
+      disk.rotation.z += 0.006 + (0.002 * Math.sin(t*0.8));
+      starField.rotation.y += 0.0006;
 
-    output.textContent = result;
-  }
-}
+      coreMat.uniforms.uTime.value = t;
+      diskMat.uniforms.uTime.value = t;
+      haloMat.uniforms.uTime.value = t;
 
-// Background black hole animation
-const canvas = document.getElementById("space");
-const ctx = canvas.getContext("2d");
-let w, h;
-function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
-resize(); window.onresize = resize;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
 
-function drawBlackhole() {
-  ctx.clearRect(0,0,w,h);
-  const centerX = w/2, centerY = h/2;
-  const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 400);
-  gradient.addColorStop(0, "#000000");
-  gradient.addColorStop(0.3, "#0a0a40");
-  gradient.addColorStop(0.6, "#000010");
-  gradient.addColorStop(1, "transparent");
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, 400, 0, Math.PI * 2);
-  ctx.fill();
+    function fit(){ renderer.setSize(container.clientWidth, container.clientHeight); camera.aspect = container.clientWidth/container.clientHeight; camera.updateProjectionMatrix(); }
+    fit();
 
-  // Event horizon glow
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, 120, 0, Math.PI * 2);
-  ctx.strokeStyle = "rgba(255,255,255,0.1)";
-  ctx.lineWidth = 3;
-  ctx.stroke();
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === 'r') resetBtn.click();
+      if(e.key === 'Enter') applyBtn.click();
+    });
 
-  requestAnimationFrame(drawBlackhole);
-}
-drawBlackhole();
-</script>
+    (function adaptive(){ if(window.devicePixelRatio !== renderer.getPixelRatio()){renderer.setPixelRatio(Math.min(window.devicePixelRatio,2)); renderer.setSize(container.clientWidth, container.clientHeight);} requestAnimationFrame(adaptive); })();
+  </script>
 </body>
 </html>
