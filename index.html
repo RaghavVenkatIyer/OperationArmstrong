@@ -1,309 +1,186 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Interactive Black Hole — Robust Frontend</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Black Hole Simulator</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: black;
+      color: white;
+      font-family: "Poppins", sans-serif;
+    }
 
-<!-- Three.js + OrbitControls -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
 
-<style>
-  :root{
-    --panel-bg: rgba(2,10,12,0.72);
-    --accent: #00eaff;
-    --muted: #a8f7ff;
-  }
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
-  body{background:#000; color:var(--muted); overflow:hidden;}
-  #ui{
-    position:fixed; left:12px; top:12px; z-index:20; width:340px;
-    background:var(--panel-bg); padding:14px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.6);
-    backdrop-filter: blur(6px);
-  }
-  h2{margin:6px 0 10px; color:var(--accent); font-weight:700; font-size:16px;}
-  label{display:block; font-size:13px; color:#cdeff6; margin-top:8px;}
-  input, select, button{width:100%; padding:8px 10px; margin-top:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:#031116; color:var(--muted); font-size:13px;}
-  button{cursor:pointer; background:linear-gradient(90deg,var(--accent),#0077ff); color:#001; font-weight:700; border:none;}
-  button.secondary{background:#0b2230;color:var(--muted);border:1px solid rgba(255,255,255,0.04);font-weight:600}
-  #output{margin-top:10px; font-family:monospace; font-size:12px; background:rgba(0,0,0,0.45); padding:10px; border-radius:8px; max-height:220px; overflow:auto; color:#9ff;}
-  #small-hint{font-size:12px; color:#87eaff; margin-top:8px;}
-  canvas{display:block}
-  @media (max-width:720px){
-    #ui{left:10px; right:10px; width:auto}
-  }
-</style>
+    input, select, button {
+      width: 200px;
+      margin-top: 6px;
+      padding: 6px;
+      border: none;
+      border-radius: 6px;
+      background-color: #222;
+      color: white;
+      outline: none;
+    }
+
+    button {
+      background: linear-gradient(90deg, #222, #555);
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #555, #999);
+    }
+
+    #result {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px;
+      border-radius: 10px;
+      width: 400px;
+      max-height: 250px;
+      overflow-y: auto;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
+
 <body>
   <div id="ui">
-    <h2>🌀 Black Hole Simulator (Frontend)</h2>
-
-    <label>Mass (M) — kg</label>
-    <input id="M" type="number" value="5e30" step="any" />
-
-    <label>Distance (r) — m</label>
-    <input id="r" type="number" value="1e7" step="any" />
-
-    <label>Mode</label>
-    <select id="mode">
-      <option value="0">Viewer → Faller (viewer time given)</option>
-      <option value="1">Faller → Viewer (faller time given)</option>
-    </select>
-
-    <label>Time (s) — the input time corresponding to Mode</label>
-    <input id="time" type="number" step="any" placeholder="optional" />
-
-    <label>Object mass (m) — kg (for potential energy)</label>
-    <input id="m" type="number" step="any" placeholder="optional" />
-
-    <label>Height (h) — m (for tidal force)</label>
-    <input id="h" type="number" step="any" placeholder="optional" />
-
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button id="btnSim">Simulate</button>
-      <button id="btnReset" class="secondary">Reset View</button>
-    </div>
-
-    <div id="small-hint">Endpoint: <code style="color:#bfefff">https://d258dadd-c73d-442d-bbcc-1570d3c8e404-00-2dx0zyosk1khh.kirk.replit.dev/blackhole</code></div>
-    <div id="output">Results and diagnostic messages will appear here.</div>
+    <h3>🌀 Black Hole Simulator</h3>
+    <label>Mass (kg): <input id="M" type="number" value="1.989e30"></label><br>
+    <label>Distance (m): <input id="r" type="number" value="1e7"></label><br>
+    <label>Mode:
+      <select id="mode">
+        <option value="0">Viewer → Faller</option>
+        <option value="1">Faller → Viewer</option>
+      </select>
+    </label><br>
+    <label>Time (s): <input id="time" type="number" value="1"></label><br>
+    <label>Object Mass (kg): <input id="m" type="number" value="1"></label><br>
+    <label>Height (m): <input id="h" type="number" value="1"></label><br>
+    <button onclick="fetchData()">Simulate</button>
   </div>
 
-  <!-- Three.js canvas is appended by script -->
+  <div id="result">Simulation output will appear here...</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
   <script>
-  // ---------- Config ----------
-  const API_BASE = 'https://d258dadd-c73d-442d-bbcc-1570d3c8e404-00-2dx0zyosk1khh.kirk.replit.dev/blackhole';
+    const apiUrl = "https://operationarmstrong-gufc.onrender.com/blackhole";
 
-  // ---------- UI refs ----------
-  const outputEl = document.getElementById('output');
-  const btnSim = document.getElementById('btnSim');
-  const btnReset = document.getElementById('btnReset');
+    // --- 3D Scene Setup ---
+    const scene = new THREE.Scene();
 
-  // ---------- Three.js scene ----------
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio || 1);
-  document.body.appendChild(renderer.domElement);
-
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x000006);
-
-  const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 5000);
-  camera.position.set(0, 10, 60);
-
-  // Controls
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-
-  // Lights
-  const ambient = new THREE.AmbientLight(0xffffff, 0.35);
-  scene.add(ambient);
-  const point = new THREE.PointLight(0xffffff, 1.5);
-  point.position.set(50,50,50);
-  scene.add(point);
-
-  // Starfield (fast)
-  function makeStarfield(count=4000, spread=2000){
-    const buf = new Float32Array(count*3);
-    for(let i=0;i<count*3;i+=3){
-      buf[i]   = (Math.random()-0.5)*spread;
-      buf[i+1] = (Math.random()-0.5)*spread;
-      buf[i+2] = (Math.random()-0.5)*spread;
+    // Add stars background
+    const starsGeometry = new THREE.BufferGeometry();
+    const starCount = 5000;
+    const starVertices = [];
+    for (let i = 0; i < starCount; i++) {
+      const x = (Math.random() - 0.5) * 2000;
+      const y = (Math.random() - 0.5) * 2000;
+      const z = (Math.random() - 0.5) * 2000;
+      starVertices.push(x, y, z);
     }
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.BufferAttribute(buf,3));
-    const mat = new THREE.PointsMaterial({ color:0xffffff, size: 0.6, opacity:0.9, transparent:true });
-    const pts = new THREE.Points(geom, mat);
-    pts.frustumCulled = false;
-    return pts;
-  }
-  const stars = makeStarfield(8000, 2200);
-  scene.add(stars);
+    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+    const stars = new THREE.Points(starsGeometry, starMaterial);
+    scene.add(stars);
 
-  // Background spherical nebula (inverted sphere)
-  const loader = new THREE.TextureLoader();
-  loader.crossOrigin = '';
-  loader.load('https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/galaxy_starfield.png', tex=>{
-    const bg = new THREE.Mesh(
-      new THREE.SphereGeometry(1800, 32, 32),
-      new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, opacity:0.95, transparent:true })
-    );
-    bg.frustumCulled = false;
-    scene.add(bg);
-  });
+    // Add black hole (sphere)
+    const blackHoleGeometry = new THREE.SphereGeometry(5, 64, 64);
+    const blackHoleMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+    scene.add(blackHole);
 
-  // Black hole core (event horizon)
-  const bhGeo = new THREE.SphereGeometry(4.5, 128, 128);
-  const bhMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-  const blackHole = new THREE.Mesh(bhGeo, bhMat);
-  scene.add(blackHole);
-
-  // Accretion disk (textured ring)
-  const ringGeo = new THREE.RingGeometry(5.2, 12, 256, 1);
-  const ringMat = new THREE.MeshBasicMaterial({
-    color: 0xff8a33, side: THREE.DoubleSide, transparent:true, opacity:0.95
-  });
-  const accDisk = new THREE.Mesh(ringGeo, ringMat);
-  accDisk.rotation.x = Math.PI/2;
-  scene.add(accDisk);
-
-  // Soft glow (pseudo atmospheric)
-  const glowGeo = new THREE.SphereGeometry(9, 64, 64);
-  const glowMat = new THREE.MeshBasicMaterial({ color:0xff3300, transparent:true, opacity:0.12 });
-  const glow = new THREE.Mesh(glowGeo, glowMat);
-  scene.add(glow);
-
-  // small helper axes (hidden by default)
-  // const axes = new THREE.AxesHelper(20); scene.add(axes);
-
-  // renderer resize
-  function resize(){ renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); }
-  window.addEventListener('resize', resize, {passive:true}); resize();
-
-  // animation loop
-  let last = 0;
-  function loop(t){
-    requestAnimationFrame(loop);
-    const dt = (t - last) * 0.001; last = t;
-    accDisk.rotation.z += 0.015 * dt * 60; // consistent speed
-    // subtle star motion:
-    stars.rotation.y += 0.0002;
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  loop(0);
-
-  // ---------- Utility: show messages ----------
-  function show(msg, level='info'){
-    // accepts strings or objects
-    if(typeof msg === 'object') msg = JSON.stringify(msg, null, 2);
-    outputEl.innerHTML = `<pre>${escapeHtml(msg)}</pre>`;
-  }
-  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  const outputEl = document.getElementById('output');
-
-  // ---------- Fetch routine robust to JSON or HTML text ----------
-  async function callApi(params){
-    // Build query string only for defined values
-    const url = new URL(API_BASE);
-    Object.keys(params).forEach(k=>{
-      const v = params[k];
-      if(v!==null && v!=='' && v!==undefined) url.searchParams.append(k, String(v));
+    // Add accretion disk
+    const diskGeometry = new THREE.RingGeometry(7, 20, 128);
+    const diskMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff6600,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.6
     });
+    const disk = new THREE.Mesh(diskGeometry, diskMaterial);
+    disk.rotation.x = Math.PI / 2;
+    scene.add(disk);
 
-    // fetch with CORS mode (default). handle network/CORS errors
-    let res;
-    try {
-      res = await fetch(url.toString(), { method:'GET', mode:'cors' });
-    } catch (err) {
-      // usually network error or CORS blocked
-      throw new Error(`Network / CORS error: ${err.message}. Check server status and CORS headers.`);
+    // Add event horizon glow
+    const glowGeometry = new THREE.SphereGeometry(5.3, 64, 64);
+    const glowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff3300,
+      transparent: true,
+      opacity: 0.2
+    });
+    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    scene.add(glow);
+
+    // Camera and Renderer
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.z = 30;
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Controls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+
+    // Animate
+    function animate() {
+      requestAnimationFrame(animate);
+      disk.rotation.z += 0.005;
+      controls.update();
+      renderer.render(scene, camera);
     }
+    animate();
 
-    // If non-2xx status, try to get text body for diagnostics
-    if(!res.ok){
-      const text = await res.text().catch(()=>`Status ${res.status}`);
-      throw new Error(`HTTP ${res.status} — ${text}`);
-    }
+    // --- API Connection ---
+    async function fetchData() {
+      const M = document.getElementById("M").value;
+      const r = document.getElementById("r").value;
+      const mode = document.getElementById("mode").value;
+      const time = document.getElementById("time").value;
+      const m = document.getElementById("m").value;
+      const h = document.getElementById("h").value;
 
-    // Try parse JSON, fallback to text
-    const contentType = res.headers.get('content-type') || '';
-    if(contentType.includes('application/json')) {
-      return { type:'json', value: await res.json() };
-    } else {
-      const txt = await res.text();
-      // try to parse JSON-looking payload embedded in text
+      const url = `${apiUrl}?M=${M}&r=${r}&mode=${mode}&time=${time}&m=${m}&h=${h}`;
+      document.getElementById("result").innerText = "⏳ Calculating...";
+
       try {
-        const maybe = JSON.parse(txt);
-        return { type:'json', value: maybe };
-      } catch(_){
-        return { type:'text', value: txt };
+        const response = await fetch(url);
+        const text = await response.text();
+        document.getElementById("result").innerHTML = text;
+      } catch (err) {
+        document.getElementById("result").innerText = "⚠️ Error connecting to API.";
+        console.error(err);
       }
     }
-  }
 
-  // ---------- Simulation / UI handlers ----------
-  async function simulate(){
-    show('⏳ contacting API — please wait...');
-    const params = {
-      M: document.getElementById('M').value,
-      r: document.getElementById('r').value,
-      mode: document.getElementById('mode').value,
-      time: document.getElementById('time').value,
-      m: document.getElementById('m').value,
-      h: document.getElementById('h').value
-    };
-
-    try {
-      const result = await callApi(params);
-      if(result.type === 'json'){
-        const json = result.value;
-        // if backend returns { text_output, data } style (our updated backend)
-        if(json.text_output && json.data){
-          show(json.text_output + '\n\n--- parsed data ---\n' + JSON.stringify(json.data, null, 2));
-          updateVisualsFromData(json.data);
-        } else {
-          // if backend returns plain JSON fields
-          show(JSON.stringify(json, null, 2));
-          updateVisualsFromData(json);
-        }
-      } else {
-        // plaintext / HTML fallback
-        show(result.value);
-        // try to extract numbers for visuals
-        const parsed = parseNumbersFromText(result.value);
-        if(parsed) updateVisualsFromData(parsed);
-      }
-    } catch (err) {
-      // show helpful debugging guidance
-      const msg = err.message || String(err);
-      show(`❌ ${msg}\n\nIf this is a CORS error, add CORS headers on the Flask server (example below).`);
-    }
-  }
-
-  // attempt to find Schwarzschild radius in free text, or relevant values
-  function parseNumbersFromText(text){
-    try{
-      // look for "Schwarzschild radius = 1.23e+05 m" pattern
-      const m = text.match(/Schwarzschild radius\s*[=:]\s*([0-9.eE+\-]+)/i);
-      const ev = text.match(/Escape velocity\s*[=:]\s*([0-9.eE+\-]+)/i);
-      const gs = text.match(/Gravitational redshift\s*[=:]\s*([0-9.eE+\-]+)/i);
-      const parsed = {};
-      if(m) parsed.Schwarzschild_radius = parseFloat(m[1]);
-      if(ev) parsed.Escape_velocity = parseFloat(ev[1]);
-      if(gs) parsed.Gravitational_redshift = parseFloat(gs[1]);
-      return Object.keys(parsed).length?parsed:null;
-    }catch(e){return null;}
-  }
-
-  // set visuals (scale, glow) based on returned data
-  function updateVisualsFromData(data){
-    // prefer Schwarzschild_radius then mass/escape velocity
-    let scale = 1;
-    if(data.Schwarzschild_radius) scale = Math.max(0.6, Math.log10(Math.abs(data.Schwarzschild_radius)+1) );
-    else if(data.Escape_velocity) scale = Math.max(0.6, Math.log10(Math.abs(data.Escape_velocity)+1)/3 );
-    else if(document.getElementById('M').value) scale = Math.max(0.6, Math.log10(Math.max(1, +document.getElementById('M').value))/2);
-
-    // apply scale with limits
-    scale = Math.min(28, Math.max(0.6, scale));
-    blackHole.scale.set(scale, scale, scale);
-    accDisk.scale.set(scale*1.4, scale*1.4, 1);
-    glow.scale.set(scale*1.6, scale*1.6, scale*1.6);
-
-    // emissive intensity if redshift present
-    if(data.Gravitational_redshift) {
-      const v = Math.min(4, Math.abs(data.Gravitational_redshift)*2);
-      accDisk.material.opacity = Math.min(1, 0.6 + v*0.1);
-    }
-  }
-
-  // ---------- Helpers ----------
-  btnSim.addEventListener('click', simulate);
-  btnReset.addEventListener('click', ()=>{ camera.position.set(0,10,60); controls.target.set(0,0,0); });
-
-  // show initial hint
-  show('Enter parameters and click "Simulate". If you see a CORS error, add CORS to the Flask backend (snippet shown after the HTML).');
-
+    // Resize handling
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
