@@ -1,121 +1,135 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>3D Black Hole Simulator</title>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial; background: #151826; color: #eee; }
-        #controls { margin: 20px; background: #222; padding: 20px; border-radius: 8px; }
-        label { font-weight: bold; }
-        #renderCanvas { width: 100vw; height: 60vh; display: block; }
-        .summary { margin-top: 12px; padding: 16px; background: #1e212d; border-radius: 6px; }
-    </style>
+  <title>2D Black Hole Physics Calculator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 15px; }
+    label { font-weight: bold; }
+    button { padding: 10px 20px; }
+    .results { background-color: #f2f2f2; padding: 15px; border-radius: 6px; margin-top: 20px; white-space: pre-wrap; font-family: monospace; }
+  </style>
 </head>
 <body>
-    <h1>3D Black Hole Simulator</h1>
-    <div id="controls">
-        <form id="bhForm">
-            <label>Black Hole Mass (kg):</label>
-            <input type="number" id="mass" step="any" required>
-            <br><label>Distance from Center (m):</label>
-            <input type="number" id="radius" step="any" required>
-            <br><label>Object Mass Nearby (kg):</label>
-            <input type="number" id="objmass" step="any" required>
-            <br><label>Object Height (m):</label>
-            <input type="number" id="height" step="any" required>
-            <br>
-            <button type="submit">Simulate</button>
-        </form>
-        <div id="summary" class="summary"></div>
-    </div>
-    <div id="renderCanvas"></div>
+  <h1>Black Hole Physics Calculator</h1>
+  <form id="bhForm">
+    <label>Mass of Black Hole (kg):</label>
+    <input type="number" id="mass" step="any" required />
 
-    <!-- Three.js CDN -->
-    <script src="https://unpkg.com/three@0.151.3/build/three.min.js"></script>
-    <script>
-        // Basic 3D scene
-        let scene, camera, renderer, bhMesh, eventHorizonMesh;
-        function init3D() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth/(window.innerHeight*0.6), 0.1, 1e5);
-            camera.position.set(0, 70, 150);
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setClearColor(0x111122);
-            renderer.setSize(window.innerWidth, window.innerHeight * 0.6);
-            document.getElementById('renderCanvas').appendChild(renderer.domElement);
+    <label>Distance from Black Hole (m):</label>
+    <input type="number" id="distance" step="any" required />
 
-            // Black hole sphere
-            bhMesh = new THREE.Mesh(
-                new THREE.SphereGeometry(20, 64, 64),
-                new THREE.MeshBasicMaterial({color: 0x222244})
-            );
-            scene.add(bhMesh);
+    <label>Calculation Time Type:</label>
+    <select id="timeType" required>
+      <option value="0">Input viewer's time, calculate faller’s time</option>
+      <option value="1">Input faller’s time, calculate viewer's time</option>
+    </select>
 
-            // Event horizon visualization (transparent)
-            eventHorizonMesh = new THREE.Mesh(
-                new THREE.SphereGeometry(22, 32, 32),
-                new THREE.MeshBasicMaterial({color: 0xff2222, transparent: true, opacity: 0.3})
-            );
-            scene.add(eventHorizonMesh);
+    <label>Viewer's Time (seconds):</label>
+    <input type="number" id="viewerTime" step="any" />
 
-            // Some ambient stars
-            for (let i=0; i<1000; i++) {
-                const geo = new THREE.SphereGeometry(0.5,8,8);
-                const star = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({color: 0xffffff}));
-                star.position.set(
-                    (Math.random()-0.5)*1000,
-                    (Math.random()-0.5)*1000,
-                    (Math.random()-0.5)*1000
-                );
-                scene.add(star);
-            }
+    <label>Faller's Time (seconds):</label>
+    <input type="number" id="fallerTime" step="any" />
 
-            animate();
+    <label>Length Type:</label>
+    <select id="lengthSelection" required>
+      <option value="0">Input viewer's length, calculate faller's length</option>
+      <option value="1">Input faller's length, calculate viewer's length</option>
+    </select>
+
+    <label>Viewer's Length (meters):</label>
+    <input type="number" id="viewerLength" step="any" />
+
+    <label>Faller's Length (meters):</label>
+    <input type="number" id="fallerLength" step="any" />
+
+    <label>Mass of Object Near Black Hole (kg):</label>
+    <input type="number" id="objectMass" step="any" required />
+
+    <label>Height of Person (m):</label>
+    <input type="number" id="personHeight" step="any" required />
+
+    <button type="submit">Calculate</button>
+  </form>
+
+  <div id="results" class="results"></div>
+
+  <script>
+    document.getElementById('bhForm').onsubmit = function(event) {
+      event.preventDefault();
+
+      const G = 6.674e-11;
+      const c = 3e8;
+
+      const M = parseFloat(document.getElementById('mass').value);
+      const r = parseFloat(document.getElementById('distance').value);
+      const timeType = parseInt(document.getElementById('timeType').value);
+      const viewerTime = parseFloat(document.getElementById('viewerTime').value);
+      const fallerTime = parseFloat(document.getElementById('fallerTime').value);
+      const lengthSelection = parseInt(document.getElementById('lengthSelection').value);
+      const viewerLength = parseFloat(document.getElementById('viewerLength').value);
+      const fallerLength = parseFloat(document.getElementById('fallerLength').value);
+      const m = parseFloat(document.getElementById('objectMass').value);
+      const h = parseFloat(document.getElementById('personHeight').value);
+
+      const r_s = (2 * G * M) / (c ** 2);
+      let t_faller, t_viewer;
+
+      if (timeType === 0) {
+        if (!viewerTime) {
+          alert("Please enter viewer's time.");
+          return;
         }
-        function animate() {
-            requestAnimationFrame(animate);
-            bhMesh.rotation.y += 0.002;
-            eventHorizonMesh.rotation.y += 0.002;
-            renderer.render(scene, camera);
+        t_faller = viewerTime * Math.sqrt(1 - r_s / r);
+      } else {
+        if (!fallerTime) {
+          alert("Please enter faller's time.");
+          return;
         }
-        window.onload = init3D;
+        t_viewer = fallerTime / Math.sqrt(1 - r_s / r);
+      }
 
-        // Physics calculation/visual API call
-        document.getElementById('bhForm').onsubmit = async function(evt) {
-            evt.preventDefault();
-            const G = 6.674e-11, c = 3e8;
-            let M = parseFloat(mass.value), r = parseFloat(radius.value), mobj = parseFloat(objmass.value), h = parseFloat(height.value);
-            // Schwarzschild radius
-            let r_s = (2*G*M)/(c**2);
-
-            // Calculate escape velocity, etc. (client side, replace with API if needed)
-            let escapevelocity = Math.sqrt((2*G*M)/r);
-            let gravitationalacceleration = (G*M)/(r**2);
-            let orbitalvelocity = Math.sqrt((G*M)/r);
-            let gravitationalredshift = (1 / Math.sqrt(1 - (r_s / r))) - 1;
-            let gravitationalpotentialenergy = -((G*mobj*M)/r);
-            let acceleration = G*M/r**2*Math.sqrt(1-(r_s/r));
-            let orbitalperiod = 2*Math.PI*Math.sqrt(r**3/(G*M));
-            let tidalforce = (2*G*M*h)/(r**3);
-
-            // Update visualization
-            let scale = 22; // event horizon
-            bhMesh.scale.set(r_s/scale, r_s/scale, r_s/scale);
-            eventHorizonMesh.scale.set(r_s/scale, r_s/scale, r_s/scale);
-
-            document.getElementById('summary').innerHTML = `
-                <strong>Simulation Results:</strong><br>
-                Schwarzschild radius: <b>${r_s.toExponential(4)}m</b><br>
-                Escape velocity: <b>${escapevelocity.toExponential(4)}</b> m/s<br>
-                Gravitational acceleration near BH: <b>${gravitationalacceleration.toExponential(4)}</b> m/s²<br>
-                Orbital velocity: <b>${orbitalvelocity.toExponential(4)}</b> m/s<br>
-                Gravitational redshift: <b>${gravitationalredshift.toExponential(4)}</b><br>
-                Gravitational potential energy: <b>${gravitationalpotentialenergy.toExponential(4)}</b> J<br>
-                Acceleration required to hover: <b>${acceleration.toExponential(4)}</b> m/s²<br>
-                Orbital period: <b>${orbitalperiod.toExponential(4)}</b> s<br>
-                Tidal force: <b>${tidalforce.toExponential(4)}</b> N<br>
-            `;
+      let fallerslength, viewerslength;
+      if (lengthSelection === 0) {
+        if (!viewerLength) {
+          alert("Please enter viewer's length.");
+          return;
         }
-    </script>
+        fallerslength = viewerLength * Math.sqrt(1 - r_s / r);
+      } else {
+        if (!fallerLength) {
+          alert("Please enter faller's length.");
+          return;
+        }
+        viewerslength = fallerLength / Math.sqrt(1 - r_s / r);
+      }
+
+      const escapevelocity = Math.sqrt((2 * G * M) / r);
+      const gravitationalacceleration = (G * M) / (r ** 2);
+      const orbitalvelocity = Math.sqrt((G * M) / r);
+      const gravitationalredshift = (1 / Math.sqrt(1 - (r_s / r))) - 1;
+      const gravitationalpotentialenergy = -((G * m * M) / r);
+      const acceleration = G * M / (r ** 2) * Math.sqrt(1 - (r_s / r));
+      const orbitalperiod = 2 * Math.PI * Math.sqrt(r ** 3 / (G * M));
+      const tidalforce = (2 * G * M * h) / (r ** 3);
+
+      let output = 'Summary of results:\n';
+      output += `Schwarzschild radius: ${r_s.toExponential(5)} m\n`;
+      if (t_faller !== undefined) output += `Faller's time: ${t_faller.toFixed(5)} s\n`;
+      if (t_viewer !== undefined) output += `Viewer’s time: ${t_viewer.toFixed(5)} s\n`;
+      if (fallerslength !== undefined) output += `Faller’s length: ${fallerslength.toFixed(5)} m\n`;
+      if (viewerslength !== undefined) output += `Viewer’s length: ${viewerslength.toFixed(5)} m\n`;
+      output += `Escape velocity: ${escapevelocity.toExponential(5)} m/s\n`;
+      output += `Gravitational acceleration: ${gravitationalacceleration.toExponential(5)} m/s²\n`;
+      output += `Orbital velocity: ${orbitalvelocity.toExponential(5)} m/s\n`;
+      output += `Gravitational redshift: ${gravitationalredshift.toExponential(5)}\n`;
+      output += `Gravitational potential energy: ${gravitationalpotentialenergy.toExponential(5)} J\n`;
+      output += `Acceleration required to hover: ${acceleration.toExponential(5)} m/s²\n`;
+      output += `Orbital period: ${orbitalperiod.toExponential(5)} s\n`;
+      output += `Tidal force: ${tidalforce.toExponential(5)} N\n`;
+
+      document.getElementById('results').innerText = output;
+    }
+  </script>
 </body>
 </html>
