@@ -1,4 +1,4 @@
-@@ -1,207 +1,207 @@
+@@ -1,126 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -101,81 +101,40 @@ canvas {
   <input id="distance" type="number" step="any" placeholder="e.g. 10000">
 
   <label>Mode:</label>
+  <input id="mode" type="number" placeholder="0 = Faller’s time, 1 = Viewer’s time">
   <input id="mode" type="number" placeholder="0 = Faller's time, 1 = Viewer's time">
 
+  <label>Viewer’s Time (s, if mode = 0):</label>
   <label>Viewer's Time (s, if mode = 0):</label>
   <input id="vtime" type="number" step="any" placeholder="e.g. 1200">
 
+  <label>Faller’s Time (s, if mode = 1):</label>
   <label>Faller's Time (s, if mode = 1):</label>
   <input id="ftime" type="number" step="any" placeholder="e.g. 1200">
 </div>
 
 <div class="card">
   <h3>📏 Relativistic Length & Potential Parameters</h3>
+  <label>Viewer’s Length (m, if providing faller’s length leave blank):</label>
   <label>Length Selection:</label>
   <input id="lengthselection" type="number" placeholder="0 = Viewer's length, 1 = Faller's length">
 
   <label>Viewer's Length (m, if providing faller's length leave blank):</label>
   <input id="viewerslength" type="number" step="any" placeholder="e.g. 2">
 
+  <label>Faller’s Length (m, if providing viewer’s length leave blank):</label>
   <label>Faller's Length (m, if providing viewer's length leave blank):</label>
   <input id="fallerslength" type="number" step="any" placeholder="e.g. 1.8">
 
   <label>Mass of object near black hole (kg):</label>
   <input id="objectmass" type="number" step="any" placeholder="e.g. 70">
 
+  <label>Person’s height (m):</label>
   <label>Person's height (m):</label>
   <input id="height" type="number" step="any" placeholder="e.g. 1.8">
 </div>
 
-<button onclick="calculate()">🚀 Calculate & Simulate</button>
-
-<canvas id="blackholeCanvas" width="400" height="400"></canvas>
-
-<pre id="output"></pre>
-
-<script>
-// ---- BLACK HOLE VISUALIZATION ----
-const canvas = document.getElementById("blackholeCanvas");
-const ctx = canvas.getContext("2d");
-const stars = [];
-for (let i = 0; i < 120; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const radius = 150 + Math.random() * 100;
-  stars.push({ angle, radius, speed: 0.002 + Math.random() * 0.003 });
-}
-function drawBlackHole() {
-  const w = canvas.width, h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-  const gradient = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, 150);
-  gradient.addColorStop(0, "black");
-  gradient.addColorStop(0.5, "#400000");
-  gradient.addColorStop(1, "rgba(255,0,0,0)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
-  ctx.beginPath();
-  ctx.arc(w/2, h/2, 30, 0, Math.PI * 2);
-  ctx.fillStyle = "black";
-  ctx.shadowBlur = 25;
-  ctx.shadowColor = "#0ff";
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  for (let s of stars) {
-    s.angle += s.speed;
-    const x = w/2 + s.radius * Math.cos(s.angle);
-    const y = h/2 + s.radius * Math.sin(s.angle);
-    const brightness = Math.min(255, 150 + 105 * Math.sin(s.angle));
-    ctx.fillStyle = `rgb(${brightness},${brightness},255)`;
-    ctx.fillRect(x, y, 2, 2);
-  }
-  requestAnimationFrame(drawBlackHole);
-}
-drawBlackHole();
-
-// ---- CALCULATION ----
-async function calculate() {
-  const M = document.getElementById('mass').value;
-  const r = document.getElementById('distance').value;
+@@ -175,25 +178,30 @@
   const mode = document.getElementById('mode').value;
   const viewerstime = document.getElementById('vtime').value;
   const fallerstime = document.getElementById('ftime').value;
@@ -186,19 +145,11 @@ async function calculate() {
   const h = document.getElementById('height').value;
 
   if (!M || !r || !mode) {
-  const viewerstime = document.getElementById('vtime').value || '';
-  const fallerstime = document.getElementById('ftime').value || '';
-  const lengthselection = document.getElementById('lengthselection').value || '';
-  const viewerslength = document.getElementById('viewerslength').value || '';
-  const fallerslength = document.getElementById('fallerslength').value || '';
-  const m = document.getElementById('objectmass').value || '';
-  const h = document.getElementById('height').value || '';
-
-  if (!M || !r || mode === '') {
     document.getElementById('output').innerText = "⚠️ Please fill in mass, distance, and mode!";
     return;
   }
 
+  const url = `https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(viewerstime)}&fallerstime=${encodeURIComponent(fallerstime)}`;
   const url = `https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(viewerstime)}&fallerstime=${encodeURIComponent(fallerstime)}&lengthselection=${encodeURIComponent(lengthselection)}&viewerslength=${encodeURIComponent(viewerslength)}&fallerslength=${encodeURIComponent(fallerslength)}&m=${encodeURIComponent(m)}&h=${encodeURIComponent(h)}`;
 
   document.getElementById('output').innerText = "⏳ Calculating...";
