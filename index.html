@@ -1,509 +1,146 @@
-<!doctype html>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Black Hole Simulator — VPython Aesthetics</title>
-
-  <!-- GlowScript (in-browser VPython) -->
-  <script src="https://www.glowscript.org/lib/glow.3.2.min.js"></script>
-
-  <style>
-    :root {
-      --bg: #02020a;
-      --panel: rgba(255,255,255,0.03);
-      --accent: #00ffd5;
-      --muted: #9bdcf8;
-    }
-    html,body { height:100%; margin:0; font-family: Inter, system-ui, "Segoe UI", Roboto, Helvetica, Arial; background: radial-gradient(ellipse at center, #00111a 0%, var(--bg) 60%); color: #e6f7ff;}
-    .wrap { max-width:1100px; margin:18px auto; padding:20px; display:grid; grid-template-columns: 380px 1fr; gap:18px; align-items:start; }
-    header { grid-column: 1 / -1; display:flex; align-items:center; gap:12px; }
-    h1 { margin:0; font-size:1.25rem; color:var(--accent); text-shadow:0 0 14px rgba(0,255,213,0.12); }
-    .panel { background:var(--panel); border-radius:12px; padding:14px; box-shadow: 0 6px 30px rgba(0,0,0,0.6); }
-    label { display:block; font-size:0.85rem; color:var(--muted); margin-top:10px; }
-    input[type="number"], select { width:100%; padding:10px 8px; margin-top:6px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:inherit; }
-    button { margin-top:14px; background: linear-gradient(90deg, #00ffd5, #00b4ff); border: none; padding:10px 14px; border-radius:10px; font-weight:700; color:#002; cursor:pointer; box-shadow: 0 8px 30px rgba(0,180,255,0.07); }
-    button:active{ transform:translateY(1px); }
-    #outputText { white-space:pre-wrap; font-family: monospace; margin-top:12px; max-height:200px; overflow:auto; color:#cde; background: rgba(0,0,0,0.35); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.02); }
-    /* canvas container */
-    #simContainer { height:75vh; min-height:420px; border-radius:12px; overflow:hidden; background:linear-gradient(180deg,#000 0%, #02021a 100%); display:flex; align-items:center; justify-content:center; }
-    .small-muted { font-size:0.82rem; color:#9bdcf8; }
-    footer { grid-column: 1 / -1; text-align:center; margin-top:10px; color:#6fb7ff; font-size:0.85rem; }
-    @media (max-width:900px) {
-      .wrap { grid-template-columns: 1fr; padding:12px; }
-      #simContainer { height:50vh; min-height:360px; }
-    }
-  </style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black Hole Simulation</title>
+<title>Black Hole Physics API Interface</title>
 <style>
-body {
-  font-family: 'Roboto', sans-serif;
-  background: radial-gradient(circle at center, #000010, #000000);
-  color: #00ffea;
-  text-align: center;
-  padding: 20px;
-  overflow-x: hidden;
-}
-
-h1 {
-  color: #0ff;
-  margin-bottom: 20px;
-}
-
-input, button {
-  background: #111;
-  color: #0ff;
-  border: 1px solid #0ff;
-  padding: 8px;
-  margin: 5px;
-  border-radius: 6px;
-  font-size: 1em;
-}
-
-button {
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-button:hover {
-  background-color: #0ff;
-  color: #000;
-}
-
-#output {
-  white-space: pre-wrap;
-  background: #111;
-  color: #0f0;
-  padding: 15px;
-  border-radius: 10px;
-  border: 1px solid #0ff;
-  margin-top: 15px;
-  max-width: 90%;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: left;
-}
-
-canvas {
-  display: block;
-  margin: 20px auto;
-  background: radial-gradient(circle at center, #000, #010010);
-  border-radius: 50%;
-  box-shadow: 0 0 40px #0ff4, inset 0 0 60px #000;
-}
+    body {
+        background-color: #0d1117;
+        color: #c9d1d9;
+        font-family: "Segoe UI", Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        text-align: center;
+        color: #58a6ff;
+    }
+    form {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #161b22;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #111;
+    }
+    label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    input, select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #30363d;
+        border-radius: 5px;
+        background-color: #0d1117;
+        color: #c9d1d9;
+        margin-top: 4px;
+    }
+    button {
+        margin-top: 15px;
+        width: 100%;
+        padding: 10px;
+        background-color: #238636;
+        border: none;
+        border-radius: 5px;
+        color: #fff;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #2ea043;
+    }
+    #output {
+        margin-top: 30px;
+        background-color: #161b22;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th, td {
+        border: 1px solid #30363d;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #21262d;
+        color: #58a6ff;
+    }
+    .error {
+        color: #f85149;
+        font-weight: bold;
+    }
 </style>
 </head>
 <body>
 
-  <div class="wrap">
-    <header>
-      <img src="https://raw.githubusercontent.com/favicon.ico" alt="" style="width:34px;height:34px;border-radius:6px; filter: drop-shadow(0 6px 18px rgba(0,255,213,0.08));">
-      <h1>Black Hole Simulator — VPython Aesthetics</h1>
-      <div style="flex:1"></div>
-      <div class="small-muted">Connected to your Replit API</div>
-    </header>
+<h1>🌌 Black Hole Physics Calculator</h1>
 
-    <!-- Controls / Inputs -->
-    <div class="panel">
-      <h3 style="margin:0 0 8px 0; color:var(--accent)">Parameters</h3>
+<form id="blackholeForm">
+    <label>Mass of Black Hole (M in kg):</label>
+    <input type="number" name="M" value="1.989e30" step="any" required>
 
-      <label>Black hole mass M (kg)
-        <input id="M" type="number" step="any" value="5e30" />
-      </label>
+    <label>Distance from Center (r in m):</label>
+    <input type="number" name="r" value="1e7" step="any" required>
 
-      <label>Distance r from BH center (m)
-        <input id="r" type="number" step="any" value="10000" />
-      </label>
+    <label>Mode:</label>
+    <select name="mode">
+        <option value="0">Viewer → Faller (Faller Time)</option>
+        <option value="1">Faller → Viewer (Viewer Time)</option>
+    </select>
 
-      <label>Object mass m (kg)
-        <input id="m" type="number" step="any" value="75" />
-      </label>
+    <label>Time Interval (t in s):</label>
+    <input type="number" name="time" value="100" step="any" required>
 
-      <label>Height for tidal calc h (m)
-        <input id="h" type="number" step="any" value="1.8" />
-      </label>
+    <label>Mass of Object (m in kg):</label>
+    <input type="number" name="m" value="1000" step="any" required>
 
-      <label>Time (choose type)
-        <select id="time">
-          <option value="0">Input viewer's time (compute faller time)</option>
-          <option value="1">Input faller's time (compute viewer time)</option>
-        </select>
-      </label>
+    <label>Height Difference (h in m):</label>
+    <input type="number" name="h" value="2" step="any" required>
 
-      <label>Viewer/Faller time value (s)
-        <input id="time_value" type="number" step="any" value="100" />
-      </label>
+    <button type="submit">Calculate</button>
+</form>
 
-      <label>Length selection (0 viewer→faller, 1 faller→viewer)
-        <select id="lengthselection">
-          <option value="0" selected>viewer → faller</option>
-          <option value="1">faller → viewer</option>
-        </select>
-      </label>
-
-      <label>Viewer length (if lengthselection=0)
-        <input id="viewersleng" type="number" step="any" value="10" />
-      </label>
-
-      <button id="runBtn">Run Simulation</button>
-
-      <div id="outputText" aria-live="polite">API output will appear here...</div>
-    </div>
-
-    <!-- Simulation Canvas -->
-    <div class="panel" id="simContainer">
-      <!-- glow() will inject a canvas here -->
-      <div id="simInner" style="width:100%;height:100%"></div>
-    </div>
-
-    <footer>Tip: inputs are sent as JSON POST to <code>/run</code> on your Replit endpoint.</footer>
-  </div>
-
-  <script>
-  (function(){
-    // Your endpoint (the black hole /run endpoint you provided)
-    const API_ENDPOINT = 'https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/run';
-
-    const runBtn = document.getElementById('runBtn');
-    const outputText = document.getElementById('outputText');
-    let latestData = {}; // store last parsed numeric values
-
-    function buildRequestPayload() {
-      // Build payload with keys the backend wrapper expects (keeps compatibility)
-      return {
-        M: parseFloat(document.getElementById('M').value),
-        r: parseFloat(document.getElementById('r').value),
-        m: parseFloat(document.getElementById('m').value),
-        h: parseFloat(document.getElementById('h').value),
-        time: parseInt(document.getElementById('time').value),
-        viewerstime: parseFloat(document.getElementById('time_value').value),
-        lengthselection: parseInt(document.getElementById('lengthselection').value),
-        viewersleng: parseFloat(document.getElementById('viewersleng').value),
-        // also include some extra fields just in case the other Flask variant expects them
-        time_type: parseInt(document.getElementById('time').value),
-        time_value: parseFloat(document.getElementById('time_value').value),
-        length_type: parseInt(document.getElementById('lengthselection').value),
-        length_value: parseFloat(document.getElementById('viewersleng').value)
-      };
-    }
-
-    async function callApi(payload) {
-      const resp = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
-      // Try to parse JSON first, otherwise fallback to text
-      const ctype = resp.headers.get('content-type') || '';
-      if (ctype.includes('application/json')) {
-        return resp.json();
-      } else {
-        return resp.text();
-      }
-    }
-
-    function parseOutput(result) {
-      // Handles both JSON results object (with keys) and text output wrapper
-      const numeric = {
-        r_s: undefined,
-        r: undefined,
-        escape_velocity: undefined,
-        orbital_velocity: undefined,
-        orbital_period: undefined,
-        gravitational_redshift: undefined,
-        tidal_force: undefined
-      };
-
-      if (typeof result === 'object' && result !== null) {
-        // If the endpoint returned the "detailed JSON results" style:
-        if ('Schwarzschild_radius_m' in result) numeric.r_s = Number(result.Schwarzschild_radius_m);
-        if ('Escape_velocity_m_per_s' in result) numeric.escape_velocity = Number(result.Escape_velocity_m_per_s);
-        if ('Orbital_velocity_m_per_s' in result) numeric.orbital_velocity = Number(result.Orbital_velocity_m_per_s);
-        if ('Orbital_period_s' in result) numeric.orbital_period = Number(result.Orbital_period_s);
-        if ('Gravitational_redshift' in result) numeric.gravitational_redshift = Number(result.Gravitational_redshift);
-        if ('Tidal_force_N' in result) numeric.tidal_force = Number(result.Tidal_force_N);
-        // if the wrapper returned {output: "lots of text"}
-        if ('output' in result && typeof result.output === 'string') {
-          Object.assign(numeric, parseTextForNumbers(result.output));
-        }
-      } else if (typeof result === 'string') {
-        Object.assign(numeric, parseTextForNumbers(result));
-      }
-
-      // Use r from the payload (we know the user provided it)
-      numeric.r = Number(document.getElementById('r').value);
-
-      return numeric;
-    }
-
-    function parseTextForNumbers(text) {
-      // Gentle regex extraction for lines like: "1.23e+05 is the Schwarzschild radius" etc.
-      const out = {};
-      function find(pattern) {
-        const m = text.match(pattern);
-        return m ? Number(m[1]) : undefined;
-      }
-      out.r_s = find(/([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s+is the Schwarzschild radius/i);
-      out.escape_velocity = find(/([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s+is the escape velocity/i);
-      out.orbital_velocity = find(/([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s+is the orbital velocity/i);
-      out.gravitational_redshift = find(/([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s+is the gravitational redshift/i);
-      out.orbital_period = find(/([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s+is the orbital period/i);
-      out.tidal_force = find(/([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s+is the tidalforce/i) || find(/is the tidal force/i) && undefined;
-      // fallback: if not found, attempt to find generic numbers on "Schwarzschild" line
-      if (out.r_s === undefined) {
-        const m2 = text.match(/Schwarzschild radius[:\s]*([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)/i);
-        if (m2) out.r_s = Number(m2[1]);
-      }
-      return out;
-    }
-
-    // ---------- GlowScript visualization ----------
-    // We'll create a glow() scene and keep references so we can update
-    let sceneReady = false;
-    let gscene, blackHole, orbiter, infoLabel;
-    let simParams = { r: 10000, r_s: 10, orbital_velocity: 0, orbital_period: 10, gravitational_redshift: 0 };
-
-    function setupGlow() {
-      // create GlowScript canvas inside #simInner
-      glow(() => {
-        // create canvas in the container element
-        const canvasElem = canvas({ container: document.getElementById('simInner'), title: '' });
-        gscene = canvasElem;
-        gscene.background = color.black;
-        gscene.width = canvasElem.width;
-        gscene.height = canvasElem.height;
-
-        // initial placeholders
-        blackHole = sphere({ pos: vec(0,0,0), radius: 1, color: color.white, emissive: true });
-        orbiter = sphere({ pos: vec(5,0,0), radius: 0.3, color: color.yellow, make_trail: true, retain: 200 });
-        infoLabel = label({ pos: vec(0, 1.6, 0), text: "Waiting for API...", box:false, color: color.white, height:12 });
-
-        sceneReady = true;
-        requestAnimationFrame(animateOrbiter);
-      });
-    }
-
-    // animation loop for orbiter
-    let theta = 0;
-    function animateOrbiter() {
-      if (!sceneReady) { requestAnimationFrame(animateOrbiter); return; }
-      try {
-        // update position from simParams
-        const r = simParams.r || 10000;
-        const ov = simParams.orbital_velocity || 0;
-        // advance angle based on orbital speed (scaled for visibility)
-        theta += (ov || 1) * 0.0005;
-        orbiter.pos = vec(r * Math.cos(theta), r * Math.sin(theta), 0);
-
-        // update color according to gravitational redshift (0..maybe large) -> normalize 0..1
-        const gz = Math.max(0, simParams.gravitational_redshift || 0);
-        const redshiftFactor = Math.min(1, gz);
-        orbiter.color = vec(1, Math.max(0, 1 - redshiftFactor), 0); // yellow -> redder with gz
-
-        // scale black hole radius visually (cap extremes)
-        blackHole.radius = Math.max(1e-6, Math.min(r * 0.25, simParams.r_s * 6 || 10));
-        // position label above
-        infoLabel.text = `r_s: ${Number(simParams.r_s).toExponential(3)} m\nr: ${Number(simParams.r).toExponential(3)} m\norbital v: ${Number(simParams.orbital_velocity).toExponential(3)} m/s\nredshift: ${Number(simParams.gravitational_redshift).toExponential(3)}`;
-      } catch(e){
-        // silent
-      }
-      requestAnimationFrame(animateOrbiter);
-    }
-
-    // initialize glow scene immediately
-    setupGlow();
-
-    // Click handler
-    runBtn.addEventListener('click', async () => {
-      outputText.textContent = 'Contacting API...';
-      const payload = buildRequestPayload();
-      try {
-        const result = await callApi(payload);
-
-        // show the raw response nicely
-        if (typeof result === 'string') {
-          outputText.textContent = result;
-        } else {
-          // pretty print JSON
-          outputText.textContent = JSON.stringify(result, null, 2);
-        }
-
-        // parse numeric values
-        const numeric = parseOutput(result);
-        // Provide fallbacks: if r_s missing compute from M
-        if (!numeric.r_s && payload.M && payload.M>0) {
-          // Schwarzschild radius r_s = 2GM/c^2 ; c = 3e8, G=6.674e-11
-          numeric.r_s = 2 * 6.674e-11 * payload.M / (3e8 * 3e8);
-        }
-        // If orbital velocity missing compute via sqrt(GM/r)
-        if ((!numeric.orbital_velocity || Number.isNaN(numeric.orbital_velocity)) && payload.M && payload.r) {
-          numeric.orbital_velocity = Math.sqrt((6.674e-11 * payload.M) / payload.r);
-        }
-        // If gravitational_redshift missing compute (1/sqrt(1 - r_s/r) - 1)
-        if ((numeric.gravitational_redshift === undefined || Number.isNaN(numeric.gravitational_redshift)) && numeric.r_s && payload.r) {
-          const ratio = numeric.r_s / payload.r;
-          if (ratio < 1) numeric.gravitational_redshift = (1 / Math.sqrt(1 - ratio)) - 1;
-          else numeric.gravitational_redshift = 1e6; // extreme
-        }
-        // If orbital period missing compute
-        if ((!numeric.orbital_period || Number.isNaN(numeric.orbital_period)) && payload.r && payload.M) {
-          numeric.orbital_period = 2 * Math.PI * Math.sqrt(Math.pow(payload.r,3) / (6.674e-11 * payload.M));
-        }
-
-        // Save for visualization
-        simParams = {
-          r: payload.r,
-          r_s: numeric.r_s || 10,
-          orbital_velocity: numeric.orbital_velocity || 0,
-          orbital_period: numeric.orbital_period || 10,
-          gravitational_redshift: numeric.gravitational_redshift || 0
-        };
-
-        // Update the glow objects if scene is ready
-        if (sceneReady) {
-          try {
-            // set positions and scales (GlowScript uses same units we give, but huge astrophysical numbers look huge,
-            // so we scale for visibility: pick a visual scale factor that maps real r to on-screen units)
-            const visScale = chooseVisualScale(simParams.r, simParams.r_s);
-            // reposition elements using scale
-            blackHole.pos = vec(0,0,0);
-            blackHole.radius = Math.max(1, simParams.r_s * visScale * 5);
-            orbiter.pos = vec(simParams.r * visScale, 0, 0);
-            orbiter.radius = Math.max(1, blackHole.radius * 0.2);
-            // set trail and clear previous
-            if (orbiter.clear) orbiter.clear(); // clear old trail
-            // adjust label position
-            infoLabel.pos = vec(0, blackHole.radius * 2.5, 0);
-          } catch(e) {
-            console.warn('Could not update GlowScript scene', e);
-          }
-        }
-
-      } catch(err) {
-        outputText.textContent = 'Error contacting API. Check console for details.';
-        console.error(err);
-      }
-    });
-
-    function chooseVisualScale(realR, realRs) {
-      // We map huge astrophysical distances into on-screen units (approx).
-      // If r is tiny (<1e6) we use 1:1, else we compress.
-      if (!realR || !isFinite(realR)) return 1e-3;
-      // Pick scale so that r * scale ~ between 50 and 600 (screen units)
-      const target = 220;
-      const scale = target / realR;
-      // But ensure black hole (r_s) remains visible: r_s*scale should be at least 4
-      if (realRs * scale < 4) {
-        return scale * (4 / (realRs * scale));
-      }
-      return Math.max(scale, 1e-6);
-    }
-<h1>🌀 Black Hole Simulation</h1>
-<p>Enter the parameters below and click <b>Calculate</b> to view all physics results and the black hole visualization.</p>
-
-<label>Mass of black hole (kg):</label><br>
-<input id="mass" type="number" step="any" placeholder="e.g. 5e30"><br>
-
-<label>Distance from black hole (km):</label><br>
-<input id="distance" type="number" step="any" placeholder="e.g. 10000"><br>
-
-<label>Mode (0 = faller’s time, 1 = viewer’s time):</label><br>
-<input id="mode" type="number" placeholder="0 or 1"><br>
-
-<label>Viewer’s Time (s, if mode=0):</label><br>
-<input id="vtime" type="number" step="any" placeholder="e.g. 1200"><br>
-
-<label>Faller’s Time (s, if mode=1):</label><br>
-<input id="ftime" type="number" step="any" placeholder="e.g. 1200"><br>
-
-<button onclick="calculate()">Calculate</button>
-
-<!-- Black hole canvas -->
-<canvas id="blackholeCanvas" width="400" height="400"></canvas>
-
-<pre id="output"></pre>
+<div id="output"></div>
 
 <script>
-// ---- BLACK HOLE VISUALIZATION ----
-const canvas = document.getElementById("blackholeCanvas");
-const ctx = canvas.getContext("2d");
-const stars = [];
-const numStars = 150;
+document.getElementById("blackholeForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const params = new URLSearchParams(new FormData(form));
+    const apiURL = "https://bb8a990c-7b5b-4f2f-a424-0cb93da6f4f9-00-2dvrieiqfxai3.kirk.replit.dev/blackhole?" + params.toString();
 
-// Initialize stars around black hole
-for (let i = 0; i < numStars; i++) {
-  const angle = Math.random() * Math.PI * 2;
-  const radius = 150 + Math.random() * 100;
-  stars.push({ angle, radius, speed: 0.002 + Math.random() * 0.003 });
-}
+    const output = document.getElementById("output");
+    output.innerHTML = "<p>Calculating...</p>";
 
-function drawBlackHole() {
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
+    try {
+        const response = await fetch(apiURL);
+        const result = await response.json();
 
-  // Gravitational redshift halo
-  const gradient = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, 150);
-  gradient.addColorStop(0, "black");
-  gradient.addColorStop(0.5, "#300000");
-  gradient.addColorStop(1, "rgba(255,0,0,0)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, w, h);
+        if (result.error) {
+            output.innerHTML = `<p class="error">Error: ${result.error}</p>`;
+            return;
+        }
 
-  // Black hole core
-  ctx.beginPath();
-  ctx.arc(w/2, h/2, 30, 0, Math.PI * 2);
-  ctx.fillStyle = "black";
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = "#0ff";
-  ctx.fill();
+        const data = result.data;
+        let html = "<h2>Results</h2><table><tr><th>Quantity</th><th>Value</th></tr>";
+        for (const [key, value] of Object.entries(data)) {
+            html += `<tr><td>${key.replace(/_/g, " ")}</td><td>${Number(value).toExponential(6)}</td></tr>`;
+        }
+        html += "</table>";
 
-  // Orbiting stars
-  ctx.shadowBlur = 0;
-  for (let star of stars) {
-    star.angle += star.speed;
-    const x = w/2 + star.radius * Math.cos(star.angle);
-    const y = h/2 + star.radius * Math.sin(star.angle);
-    const brightness = Math.min(255, 150 + 105 * Math.sin(star.angle));
-    ctx.fillStyle = `rgb(${brightness},${brightness},255)`;
-    ctx.fillRect(x, y, 2, 2);
-  }
-
-  requestAnimationFrame(drawBlackHole);
-}
-drawBlackHole();
-
-// ---- CALCULATE ----
-async function calculate() {
-  const M = document.getElementById('mass').value;
-  const r = document.getElementById('distance').value;
-  const mode = document.getElementById('mode').value;
-  const viewerstime = document.getElementById('vtime').value;
-  const fallerstime = document.getElementById('ftime').value;
-
-  if (!M || !r || !mode) {
-    document.getElementById('output').innerText = "⚠️ Please fill all required fields!";
-    return;
-  }
-
-  const url = `https://dce81952-ff2f-4e10-ba0d-737c2ea0a1fc-00-2fmx6293xzfgw.worf.replit.dev/blackhole?M=${encodeURIComponent(M)}&r=${encodeURIComponent(r)}&time=${encodeURIComponent(mode)}&viewerstime=${encodeURIComponent(viewerstime)}&fallerstime=${encodeURIComponent(fallerstime)}`;
-
-  document.getElementById('output').innerText = "⏳ Calculating...";
-
-  try {
-    const res = await fetch(url);
-    const text = await res.text();
-    document.getElementById('output').innerHTML = text;
-  } catch (err) {
-    document.getElementById('output').innerText = "❌ Error: " + err.message;
-  }
-}
+        output.innerHTML = html;
+    } catch (err) {
+        output.innerHTML = `<p class="error">Failed to fetch data. Ensure API is running.</p>`;
+    }
+});
 </script>
 
-  })();
-  </script>
 </body>
 </html>
