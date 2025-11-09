@@ -3,150 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interactive Black Hole Physics</title>
+<title>Black Hole Physics API Interface</title>
 <style>
-body {
-  background-color: #0d1117;
-  color: #c9d1d9;
-  font-family: "Segoe UI", Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-}
-h1 { text-align: center; color: #58a6ff; }
-form {
-  max-width: 600px;
-  margin: 0 auto;
-  background-color: #161b22;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px #111;
-}
-label { display:block; margin-top:10px; font-weight:bold; }
-input,select {
-  width:100%; padding:8px; border:1px solid #30363d; border-radius:5px;
-  background-color:#0d1117; color:#c9d1d9; margin-top:4px;
-}
-button {
-  margin-top:15px; width:100%; padding:10px;
-  background-color:#238636; border:none; border-radius:5px;
-  color:#fff; font-weight:bold; cursor:pointer;
-}
-button:hover { background-color:#2ea043; }
-#output {
-  margin-top:30px; background-color:#161b22; padding:20px; border-radius:10px;
-}
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th,td { border:1px solid #30363d; padding:8px; text-align:left; }
-th { background-color:#21262d; color:#58a6ff; }
-.error { color:#f85149; font-weight:bold; }
-#viewer { width:100%; height:500px; margin-top:40px; border:1px solid #30363d; border-radius:10px; }
+    body {
+        background-color: #0d1117;
+        color: #c9d1d9;
+        font-family: "Segoe UI", Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+    }
+    h1 {
+        text-align: center;
+        color: #58a6ff;
+    }
+    form {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #161b22;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #111;
+    }
+    label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    input, select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #30363d;
+        border-radius: 5px;
+        background-color: #0d1117;
+        color: #c9d1d9;
+        margin-top: 4px;
+    }
+    button {
+        margin-top: 15px;
+        width: 100%;
+        padding: 10px;
+        background-color: #238636;
+        border: none;
+        border-radius: 5px;
+        color: #fff;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #2ea043;
+    }
+    #output {
+        margin-top: 30px;
+        background-color: #161b22;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    th, td {
+        border: 1px solid #30363d;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #21262d;
+        color: #58a6ff;
+    }
+    .error {
+        color: #f85149;
+        font-weight: bold;
+    }
 </style>
 </head>
 <body>
 
-<h1>🌌 Interactive Black Hole Physics</h1>
+<h1>🌌 Black Hole Physics Calculator</h1>
 
 <form id="blackholeForm">
-  <label>Mass of Black Hole (M in kg):</label>
-  <input type="number" name="M" value="1.989e30" step="any" required>
-  <label>Distance from Center (r in m):</label>
-  <input type="number" name="r" value="1e7" step="any" required>
-  <label>Mode:</label>
-  <select name="mode">
-    <option value="0">Viewer → Faller (Faller Time)</option>
-    <option value="1">Faller → Viewer (Viewer Time)</option>
-  </select>
-  <label>Time Interval (t in s):</label>
-  <input type="number" name="time" value="100" step="any" required>
-  <label>Mass of Object (m in kg):</label>
-  <input type="number" name="m" value="1000" step="any" required>
-  <label>Height Difference (h in m):</label>
-  <input type="number" name="h" value="2" step="any" required>
-  <button type="submit">Calculate</button>
+    <label>Mass of Black Hole (M in kg):</label>
+    <input type="number" name="M" value="1.989e30" step="any" required>
+
+    <label>Distance from Center (r in m):</label>
+    <input type="number" name="r" value="1e7" step="any" required>
+
+    <label>Mode:</label>
+    <select name="mode">
+        <option value="0">Viewer → Faller (Faller Time)</option>
+        <option value="1">Faller → Viewer (Viewer Time)</option>
+    </select>
+
+    <label>Time Interval (t in s):</label>
+    <input type="number" name="time" value="100" step="any" required>
+
+    <label>Mass of Object (m in kg):</label>
+    <input type="number" name="m" value="1000" step="any" required>
+
+    <label>Height Difference (h in m):</label>
+    <input type="number" name="h" value="2" step="any" required>
+
+    <button type="submit">Calculate</button>
 </form>
 
 <div id="output"></div>
-<div id="viewer"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"></script>
 
 <script>
-// ---------- 3D Scene ----------
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / 500, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, 500);
-renderer.setClearColor(0x000000);
-document.getElementById("viewer").appendChild(renderer.domElement);
+document.getElementById("blackholeForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const params = new URLSearchParams(new FormData(form));
+    const apiURL = "https://bb8a990c-7b5b-4f2f-a424-0cb93da6f4f9-00-2dvrieiqfxai3.kirk.replit.dev/blackhole?" + params.toString();
 
-// Lighting
-const light = new THREE.PointLight(0xffffff, 2);
-light.position.set(10,10,10);
-scene.add(light);
+    const output = document.getElementById("output");
+    output.innerHTML = "<p>Calculating...</p>";
 
-// Base black hole (sphere)
-const bhGeo = new THREE.SphereGeometry(1, 64, 64);
-const bhMat = new THREE.MeshStandardMaterial({color:0x000000, roughness:0.1, metalness:1});
-const blackHole = new THREE.Mesh(bhGeo, bhMat);
-scene.add(blackHole);
+    try {
+        const response = await fetch(apiURL);
+        const result = await response.json();
 
-// Accretion disk (torus)
-const diskGeo = new THREE.TorusGeometry(3, 0.3, 32, 128);
-const diskMat = new THREE.MeshStandardMaterial({
-  emissive:new THREE.Color(0xffaa00),
-  emissiveIntensity:3,
-  color:0x000000
-});
-const disk = new THREE.Mesh(diskGeo, diskMat);
-disk.rotation.x = Math.PI / 2;
-scene.add(disk);
+        if (result.error) {
+            output.innerHTML = `<p class="error">Error: ${result.error}</p>`;
+            return;
+        }
 
-camera.position.z = 8;
+        const data = result.data;
+        let html = "<h2>Results</h2><table><tr><th>Quantity</th><th>Value</th></tr>";
+        for (const [key, value] of Object.entries(data)) {
+            html += `<tr><td>${key.replace(/_/g, " ")}</td><td>${Number(value).toExponential(6)}</td></tr>`;
+        }
+        html += "</table>";
 
-function animate() {
-  requestAnimationFrame(animate);
-  disk.rotation.z += 0.01;
-  renderer.render(scene, camera);
-}
-animate();
-
-// ---------- API + Update ----------
-async function updateBlackHole(params) {
-  const res = await fetch(
-    "https://bb8a990c-7b5b-4f2f-a424-0cb93da6f4f9-00-2dvrieiqfxai3.kirk.replit.dev/blackhole?" + params
-  );
-  const result = await res.json();
-  const output = document.getElementById("output");
-
-  if (result.error) {
-    output.innerHTML = `<p class="error">Error: ${result.error}</p>`;
-    return;
-  }
-
-  const data = result.data;
-  let html = "<h2>Results</h2><table><tr><th>Quantity</th><th>Value</th></tr>";
-  for (const [key, value] of Object.entries(data))
-    html += `<tr><td>${key.replace(/_/g," ")}</td><td>${Number(value).toExponential(6)}</td></tr>`;
-  html += "</table>";
-  output.innerHTML = html;
-
-  // Update visuals
-  const redshift = data.Gravitational_redshift;
-  const rs = data.Schwarzschild_radius;
-  disk.material.emissive = new THREE.Color(`hsl(${Math.min(30+redshift*40,360)},100%,50%)`);
-  disk.material.emissiveIntensity = 2 + redshift*2;
-  disk.scale.set(1+redshift*0.2,1,1+redshift*0.2);
-  blackHole.scale.set(rs/1e7, rs/1e7, rs/1e7); // relative size visualization
-}
-
-// ---------- Form ----------
-document.getElementById("blackholeForm").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const form = e.target;
-  const params = new URLSearchParams(new FormData(form)).toString();
-  document.getElementById("output").innerHTML = "<p>Calculating...</p>";
-  await updateBlackHole(params);
+        output.innerHTML = html;
+    } catch (err) {
+        output.innerHTML = `<p class="error">Failed to fetch data. Ensure API is running.</p>`;
+    }
 });
 </script>
 
