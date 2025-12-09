@@ -47,6 +47,17 @@ h=int(input('Enter the persons height'))
 tidalforce=(2*G*M*h)/(r**3)
 print(tidalforce, 'is the tidalforce')
 
+print('Deflection angle of light due to lensing')
+alpha = 4 * G * M / (r * c**2)
+print(alpha,'is the deflection angle of light')
+print("\nShapiro Time Delay Calculator")
+
+print('Shapiro Time Delay Calculator')
+r1 = float(input("Enter distance from the light source to the black hole (meters): "))
+r2 = float(input("Enter distance from the black hole to the observer (meters): "))
+shapiro_delay = (2 * G * M / c**3) * math.log((4 * r1 * r2) / (r**2))
+print(shapiro_delay, "seconds is the Shapiro time delay or the delay that light faces when passing close to the black hole")
+
 print('Usage of Special Relativistic Formulae')
 print('Accretion Disk Physics Calculator')
 print('Time Dilation for orbiting particle')
