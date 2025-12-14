@@ -1,163 +1,197 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import math
 import numpy as np
 import sys
 from io import StringIO
 import plotly.graph_objects as go
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='.')
+
+# ============================================================
+#                       CONSTANTS
+# ============================================================
+G = 6.674e-11
+c = 3.0e8
+
+
+# Route for serving graph files
+@app.route('/graphs/<path:filename>')
+def serve_graphs(filename):
+    return send_from_directory('.', filename)
+
 
 @app.route('/')
 def home():
-    return "🌌 Black Hole Physics API with Plotly Graphs is live — use /blackhole endpoint!"
+    return "🌌 Black Hole Physics API Online — use /blackhole endpoint."
+
 
 @app.route('/blackhole')
 def blackhole():
-    # redirect print()
+
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
 
-    # constants
-    G = 6.674e-11
-    c = 3.0e8
-
     try:
-        # Read parameters
+        # ============================================================
+        #                     READ PARAMETERS
+        # ============================================================
         M = float(request.args.get('M', 0))
         r = float(request.args.get('r', 0))
-        mode = request.args.get('mode', '0')  # 0=faller, 1=viewer
+        mode = request.args.get('mode', '0')
         t_value = float(request.args.get('time', 1))
         m = float(request.args.get('m', 1))
         h = float(request.args.get('h', 1))
+        theta_deg = float(request.args.get('theta', 0))
 
-        # Safety validations
+        # ============================================================
+        #                     VALIDATION
+        # ============================================================
         if M <= 0 or r <= 0:
             raise ValueError("Mass and distance must be positive.")
 
-        r_s = (2 * G * M) / c**2
+        r_s = 2 * G * M / c**2
         if r <= r_s:
             raise ValueError("Distance must be greater than Schwarzschild radius.")
 
         print(f"Schwarzschild radius = {r_s} m")
 
-        # Time dilation formulas
-        if mode == '0':  # viewer → faller time
+        # ============================================================
+        #                     TIME DILATION
+        # ============================================================
+        if mode == "0":
             t_faller = t_value * math.sqrt(1 - r_s / r)
-            print(f"Faller's time = {t_faller} s")
-        else:           # faller → viewer time
+            print(f"Faller time = {t_faller} s")
+        else:
             t_viewer = t_value / math.sqrt(1 - r_s / r)
-            print(f"Viewer's time = {t_viewer} s")
+            print(f"Viewer time = {t_viewer} s")
 
-        # Escape velocity
-        v_escape = math.sqrt((2 * G * M) / r)
-        print(f"Escape velocity = {v_escape} m/s")
+        # ============================================================
+        #                     BASIC GR CALCULATIONS
+        # ============================================================
+        escape_v = math.sqrt(2 * G * M / r)
+        print(f"Escape velocity = {escape_v} m/s")
 
-        # Gravitational acceleration
-        g_acc = (G * M) / (r**2)
+        g_acc = (G * M) / r**2
         print(f"Gravitational acceleration = {g_acc} m/s²")
 
-        # Orbital velocity
-        v_orb = math.sqrt((G * M) / r)
-        print(f"Orbital velocity = {v_orb} m/s")
+        orbital_v = math.sqrt(G * M / r)
+        print(f"Orbital velocity = {orbital_v} m/s")
 
-        # Gravitational redshift
-        redshift = (1 / math.sqrt(1 - (r_s / r))) - 1
+        redshift = 1 / math.sqrt(1 - r_s / r) - 1
         print(f"Gravitational redshift = {redshift}")
 
-        # Potential energy
-        U = -((G * m * M) / r)
-        print(f"Gravitational potential energy = {U} J")
+        U = -(G * M * m) / r
+        print(f"Potential energy = {U} J")
 
-        # Hover acceleration
-        hover_a = (G * M) / (r**2 * math.sqrt(1 - r_s / r))
-        print(f"Hover acceleration = {hover_a} m/s²")
+        hover_acc = (G * M) / (r**2 * math.sqrt(1 - r_s / r))
+        print(f"Hover acceleration = {hover_acc} m/s²")
 
-        # Orbital period
-        T = 2 * math.pi * math.sqrt(r**3 / (G * M))
-        print(f"Orbital period = {T} s")
+        orbital_period = 2 * math.pi * math.sqrt(r**3 / (G * M))
+        print(f"Orbital period = {orbital_period} s")
 
-        # Tidal force
-        F_tidal = (2 * G * M * h) / (r**3)
-        print(f"Tidal force = {F_tidal} N")
+        tidal_force = (2 * G * M * h) / (r**3)
+        print(f"Tidal force = {tidal_force} N")
 
-        # -------------------------
-        #   PLOTLY GRAPH SECTION
-        # -------------------------
-        r_values = np.linspace(r_s * 1.1, r * 3, 300)
+        # ============================================================
+        #               DEFLECTION OF LIGHT (LENSING)
+        # ============================================================
+        alpha = 4 * G * M / (r * c**2)
+        print(f"Light deflection angle = {alpha} radians")
 
-        # 1. Escape velocity graph
-        escape_curve = np.sqrt((2 * G * M) / r_values)
+        # ============================================================
+        #               SHAPIRO TIME DELAY
+        # ============================================================
+        r1 = float(request.args.get("r1", r*10))
+        r2 = float(request.args.get("r2", r*10))
+        shapiro = (2 * G * M / c**3) * math.log((4 * r1 * r2) / (r**2))
+        print(f"Shapiro delay = {shapiro} s")
+
+        # ============================================================
+        #               SPECIAL RELATIVISTIC EFFECTS
+        # ============================================================
+        dtau_dt = math.sqrt(1 - 3 * G * M / (r * c**2))
+        print(f"GR time dilation dtau/dt = {dtau_dt}")
+
+        omega = math.sqrt(G * M / r**3)
+        v_local = (r * omega) / math.sqrt(1 - r_s / r)
+        print(f"Local orbital velocity = {v_local} m/s")
+
+        gamma = 1 / math.sqrt(1 - (v_local / c)**2)
+        print(f"Lorentz factor gamma = {gamma}")
+
+        theta = math.radians(theta_deg)
+        g_factor = math.sqrt(1 - r_s / r) / (gamma * (1 - (v_local/c) * math.cos(theta)))
+        print(f"Observed frequency shift g-factor = {g_factor}")
+
+        # ============================================================
+        #                        PLOTLY GRAPHS
+        # ============================================================
+        r_vals = np.linspace(r_s * 1.1, r * 3, 300)
+
+        # Escape velocity graph
+        esc_curve = np.sqrt(2 * G * M / r_vals)
         fig1 = go.Figure()
-        fig1.add_trace(go.Scatter(x=r_values, y=escape_curve, mode='lines'))
-        fig1.update_layout(title="Escape Velocity vs Distance",
-                           xaxis_title="Distance (m)",
-                           yaxis_title="Escape Velocity (m/s)")
+        fig1.add_trace(go.Scatter(x=r_vals, y=esc_curve))
+        fig1.update_layout(title="Escape Velocity vs Distance")
         fig1.write_html("escape_velocity_graph.html")
 
-        # 2. Gravitational redshift graph
-        redshift_curve = (1 / np.sqrt(1 - (r_s / r_values))) - 1
+        # Redshift graph
+        red_curve = (1 / np.sqrt(1 - r_s / r_vals)) - 1
         fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(x=r_values, y=redshift_curve, mode='lines'))
-        fig2.update_layout(title="Gravitational Redshift vs Distance",
-                           xaxis_title="Distance (m)",
-                           yaxis_title="Redshift (dimensionless)")
+        fig2.add_trace(go.Scatter(x=r_vals, y=red_curve))
+        fig2.update_layout(title="Gravitational Redshift vs Distance")
         fig2.write_html("gravitational_redshift_graph.html")
 
-        # 3. Time dilation graph
-        dtau_curve = np.sqrt(1 - 3 * G * M / (r_values * c**2))
+        # Time dilation graph
+        td_curve = np.sqrt(1 - 3 * G * M / (r_vals * c**2))
         fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(x=r_values, y=dtau_curve, mode='lines'))
-        fig3.update_layout(title="Time Dilation (dtau/dt) vs Distance",
-                           xaxis_title="Distance (m)",
-                           yaxis_title="Time Dilation Factor")
+        fig3.add_trace(go.Scatter(x=r_vals, y=td_curve))
+        fig3.update_layout(title="Time Dilation vs Distance")
         fig3.write_html("timedilation_graph.html")
 
-        print("\nGraphs generated successfully:")
-        print(" - escape_velocity_graph.html")
-        print(" - gravitational_redshift_graph.html")
-        print(" - timedilation_graph.html")
-
-        # Restore stdout for JSON output
+        # ============================================================
+        #                      PREPARE JSON OUTPUT
+        # ============================================================
         sys.stdout = old_stdout
-        output_text = mystdout.getvalue()
+        output_console = mystdout.getvalue()
 
-        # JSON response object
-        data = {
+        result = {
             "Schwarzschild_radius": r_s,
-            "Escape_velocity": v_escape,
+            "Escape_velocity": escape_v,
             "Gravitational_acceleration": g_acc,
-            "Orbital_velocity": v_orb,
+            "Orbital_velocity": orbital_v,
             "Gravitational_redshift": redshift,
             "Potential_energy": U,
-            "Hover_acceleration": hover_a,
-            "Orbital_period": T,
-            "Tidal_force": F_tidal,
-            "Graph_files": [
-                "escape_velocity_graph.html",
-                "gravitational_redshift_graph.html",
-                "timedilation_graph.html"
-            ]
+            "Hover_acceleration": hover_acc,
+            "Orbital_period": orbital_period,
+            "Tidal_force": tidal_force,
+            "Deflection_angle": alpha,
+            "Shapiro_delay": shapiro,
+            "GR_time_dilation": dtau_dt,
+            "Local_orbital_velocity": v_local,
+            "Lorentz_gamma": gamma,
+            "Frequency_shift_g_factor": g_factor,
+            "Graph_links": {
+                "escape": "/graphs/escape_velocity_graph.html",
+                "redshift": "/graphs/gravitational_redshift_graph.html",
+                "timedilation": "/graphs/timedilation_graph.html"
+            },
+            "console_output": output_console
         }
 
-        if mode == '0':
-            data["Faller_time"] = t_faller
+        if mode == "0":
+            result["Faller_time"] = t_faller
         else:
-            data["Viewer_time"] = t_viewer
+            result["Viewer_time"] = t_viewer
 
-        return jsonify({
-            "text_output": output_text,
-            "data": data
-        })
-
-    except ValueError as e:
-        sys.stdout = old_stdout
-        return jsonify({"error": str(e)})
+        return jsonify(result)
 
     except Exception as e:
         sys.stdout = old_stdout
-        return jsonify({"error": "Unexpected error: " + str(e)})
+        return jsonify({"error": str(e)})
 
 
 # Run on Replit
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=81)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=81)
