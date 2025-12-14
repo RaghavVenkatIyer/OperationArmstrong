@@ -1,7 +1,4 @@
 import math
-import numpy as np
-import plotly.graph_objects as go  
-
 G=6.674e-11
 c=3.0e8
 
@@ -81,59 +78,6 @@ theta=int(input('Enter the angle between the velocity and observer line of sight
 theta=math.radians(theta)
 g_factor = math.sqrt(1 - r_s/r) / (gamma * (1 - (v_local/c) * math.cos(theta)))
 print(g_factor, "(dimensionless) is the total relativistic redshift factor")
-
-# ============================================================
-#                     PLOTLY GRAPH SECTION
-# ============================================================
-
-# Generate range of distances starting just outside Schwarzschild radius
-r_values = np.linspace(r_s * 1.1, r * 3, 300)
-
-# ------------------------
-# 1. Escape Velocity Graph
-# ------------------------
-escape_curve = np.sqrt((2 * G * M) / r_values)
-
-fig1 = go.Figure()
-fig1.add_trace(go.Scatter(x=r_values, y=escape_curve, mode='lines'))
-fig1.update_layout(title="Escape Velocity vs Distance",
-                   xaxis_title="Distance (m)",
-                   yaxis_title="Escape Velocity (m/s)")
-fig1.write_html("escape_velocity_graph.html")
-
-# ------------------------
-# 2. Gravitational Redshift Graph
-# ------------------------
-redshift_curve = (1 / np.sqrt(1 - (r_s / r_values))) - 1
-
-fig2 = go.Figure()
-fig2.add_trace(go.Scatter(x=r_values, y=redshift_curve, mode='lines'))
-fig2.update_layout(title="Gravitational Redshift vs Distance",
-                   xaxis_title="Distance (m)",
-                   yaxis_title="Redshift (dimensionless)")
-fig2.write_html("gravitational_redshift_graph.html")
-
-# ------------------------
-# 3. GR Time Dilation Graph
-# ------------------------
-dtau_curve = np.sqrt(1 - 3 * G * M / (r_values * c**2))
-
-fig3 = go.Figure()
-fig3.add_trace(go.Scatter(x=r_values, y=dtau_curve, mode='lines'))
-fig3.update_layout(title="GR Time Dilation (dtau/dt) vs Distance",
-                   xaxis_title="Distance (m)",
-                   yaxis_title="Time Dilation Factor (dimensionless)")
-fig3.write_html("timedilation_graph.html")
-
-print("\nGraphs generated successfully:")
-print(" - escape_velocity_graph.html")
-print(" - gravitational_redshift_graph.html")
-print(" - timedilation_graph.html")
-print("Embed these HTML files directly into your static website.")
-
-# ============================================================
-# END OF GRAPH CODE
-# ============================================================
 
 print('All calculations are printed and are successful, below is the summary of results : ')
 print(r_s,'meters is the schwarzchild radius')
